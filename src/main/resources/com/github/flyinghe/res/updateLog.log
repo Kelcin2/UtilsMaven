@@ -1,0 +1,9 @@
+###################1.1.2-SNAPSHOT###################
+1.Bug Fixed(com.github.flyinghe.tools.XLSXReader,com.github.flyinghe.tools.XLSReader).
+修复当Excel数据为整数时,数值过大转化成Double时数据精度丢失的问题。采用BigDecimal替代Double。
+2.Bug Fixed(com.github.flyinghe.tools.XLSXReader,com.github.flyinghe.tools.XLSReader).
+修复当Excel数据实际为字符串，但读取出来后被认为是数字的Bug，例如单元格内容为001,由于读取时会先尝试将其
+转化成数字，成功后变成1,将其当成数字类型处理,缺少了前缀00,使得读取出来的数据内容与预期不符。
+3.com.github.flyinghe.tools.ImgUtils增加了一些方便实用的方法
+4.com.github.flyinghe.tools.CommonUtils增加了一些方便实用的方法
+###################1.1.3-SNAPSHOT###################

@@ -1,0 +1,19 @@
+===========================DECLARATION===============================
+本程序中的com.github.flyinghe.depdcy.FormatTrackingHSSFListenerPlus
+和com.github.flyinghe.depdcy.XSSFSheetXMLHandlerPlus类是修改Apache POI(Version 3.14)
+开源框架中org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler和
+org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener而来。
+具体改动如下：
+1.在两个文件中分别添加了此方法：String formatRawCellContents(double value, int formatIndex, String formatString);
+2.对于org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListenerPlus而言,
+  在org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener类的方法
+  String formatNumberDateCell(CellValueRecordInterface cell)末尾处代码由
+  return _formatter.formatRawCellContents(value, formatIndex, formatString);
+  修改为了
+  return this.formatRawCellContents(value, formatIndex, formatString);
+3.对于com.github.flyinghe.depdcy.XSSFSheetXMLHandlerPlus而言,
+  在org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler类的方法
+  void endElement(String uri, String localName, String qName)中所有此代码语句
+  thisStr = formatter.formatRawCellContents(d, this.formatIndex, this.formatString);
+  修改为了
+  thisStr = this.formatRawCellContents(d, this.formatIndex, this.formatString);

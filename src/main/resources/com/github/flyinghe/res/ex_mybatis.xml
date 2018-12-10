@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <!--引入数据库连接参数属性文件-->
+    <!-- <properties resource = "db.properties" />-->
+
+    <!--设置使用的日志为Log4J-->
+    <settings>
+        <setting name = "logImpl" value = "LOG4J" />
+        <!--<setting username = "logImpl" value = "SLF4J" />-->
+        <!--二级缓存总开关-->
+        <setting name = "cacheEnabled" value = "true" />
+        <!--<setting username = "lazyLoadingEnabled" value = "true" />-->
+        <setting name = "mapUnderscoreToCamelCase" value = "true" />
+    </settings>
+
+</configuration>
