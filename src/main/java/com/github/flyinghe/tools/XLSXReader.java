@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Created by FlyingHe on 2017/8/9.
  * <p>
- * (POI 3.14及以上版本)此类采用流方式读取Excel（2007版本以上,文件后缀为xlsx）文件，
+ * 此类采用流方式读取Excel（2007版本以上,文件后缀为xlsx）文件，
  * 一般用于读取数据量较大的文件,较小数据量可采用此类({@link ReadExcelUtils})读取。
  * 注意:读取的Excel文件格式为，第0行(0-based)为标题行(可作为列名行列名的解释说明)，
  * 第1行为列名行(存储在Map中时作为key),后面的行称为数据行(存储在Map时的value),

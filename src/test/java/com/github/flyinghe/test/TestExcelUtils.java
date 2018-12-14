@@ -6,10 +6,11 @@ import com.github.flyinghe.tools.WriteExcelUtils;
 import com.github.flyinghe.tools.XLSXWriter;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -119,8 +120,8 @@ public class TestExcelUtils {
         Font font1 = xlsxWriter.createFont();
         CellStyle dataCellStyle = xlsxWriter.createCellStyle();
         dataCellStyle.setFont(font1);
-        dataCellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-        dataCellStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+        dataCellStyle.setAlignment(HorizontalAlignment.CENTER);
+        dataCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         xlsxWriter.setDefaultCellStyle(dataCellStyle);
 
         List<Map<String, Object>> list = new ArrayList<>();
@@ -201,7 +202,7 @@ public class TestExcelUtils {
     @Test
     public void test1() throws Exception {
         List<Map<String, Object>> datas = new ArrayList<>();
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < 2000; i++) {
             Map<String, Object> data = new HashMap<>();
             data.put("name", "name" + i);
             data.put("age", "age" + i);

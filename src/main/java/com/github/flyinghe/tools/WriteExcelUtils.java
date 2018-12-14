@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Created by Flying on 2016/5/28.
  * <p>
- * 本类用于将JavaBean写入Excel文档中，采用POI(3.14及以上版本)技术。
+ * 本类用于将JavaBean写入Excel文档中。
  * </p>
  */
 public class WriteExcelUtils {
@@ -116,8 +116,8 @@ public class WriteExcelUtils {
         font.setBold(true);
         font.setFontHeightInPoints((short) 16);
         cellStyle.setFont(font);
-        cellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-        cellStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+        cellStyle.setAlignment(HorizontalAlignment.CENTER);
+        cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         sheet.setDefaultColumnWidth(16);
         for (int i = 0; i < titles.size(); i++) {
             Cell cell = titleRow.createCell(i);
@@ -126,8 +126,8 @@ public class WriteExcelUtils {
         }
         //单元格样式
         CellStyle _cellStyle = sheet.getWorkbook().createCellStyle();
-        _cellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-        _cellStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+        _cellStyle.setAlignment(HorizontalAlignment.CENTER);
+        _cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         int counter = _titleRow + 1;
         for (int i = begin; i < (end < beans.size() ? end : beans.size()); i++) {
             Row row = sheet.createRow(counter++);

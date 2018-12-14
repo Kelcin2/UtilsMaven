@@ -2,10 +2,7 @@ package com.github.flyinghe.tools;
 
 import com.github.flyinghe.exception.WriteExcelException;
 import com.github.flyinghe.exception.WriteExcelRuntimeException;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
@@ -246,8 +243,8 @@ public class XLSXWriter<T> {
         this.workbook.setCompressTempFiles(isCompressTempFiles);
         this.defaultCellStyle = this.workbook.createCellStyle();
         this.defaultCellStyle.setFont(this.workbook.createFont());
-        this.defaultCellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-        this.defaultCellStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+        this.defaultCellStyle.setAlignment(HorizontalAlignment.CENTER);
+        this.defaultCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
         if (this.isWriteTitle) {
             this.defaultTitleCellStyle = this.workbook.createCellStyle();
@@ -255,8 +252,8 @@ public class XLSXWriter<T> {
             font.setBold(true);
             font.setFontHeightInPoints((short) 16);
             this.defaultTitleCellStyle.setFont(font);
-            this.defaultTitleCellStyle.setAlignment(CellStyle.ALIGN_CENTER);
-            this.defaultTitleCellStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+            this.defaultTitleCellStyle.setAlignment(HorizontalAlignment.CENTER);
+            this.defaultTitleCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         }
     }
 
