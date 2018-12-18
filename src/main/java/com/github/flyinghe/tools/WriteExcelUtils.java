@@ -16,7 +16,9 @@ import java.util.*;
  * <p>
  * 本类用于将JavaBean写入Excel文档中。
  * </p>
+ * 此工具类已被废弃,请使用{@link ExcelWriter}替代
  */
+@Deprecated
 public class WriteExcelUtils {
     public final static int XLSX = 1;
     public final static int XLS = 2;
@@ -45,7 +47,7 @@ public class WriteExcelUtils {
         } else if (value instanceof Date) {
             cell.setCellValue(format.format(value));
         } else if (value instanceof Calendar) {
-            cell.setCellValue(format.format(value));
+            cell.setCellValue(format.format(((Calendar) value).getTime()));
         } else if (value instanceof Boolean) {
             cell.setCellValue((Boolean) value);
         } else if (value instanceof Float) {

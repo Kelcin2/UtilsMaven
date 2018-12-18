@@ -437,7 +437,7 @@ public class XLSXWriter<T> {
         } else if (value instanceof Date) {
             cell.setCellValue(this.dateFormat.format(value));
         } else if (value instanceof Calendar) {
-            cell.setCellValue(this.dateFormat.format(value));
+            cell.setCellValue(this.dateFormat.format(((Calendar) value).getTime()));
         } else if (value instanceof Boolean) {
             cell.setCellValue((Boolean) value);
         } else if (value instanceof Float) {
