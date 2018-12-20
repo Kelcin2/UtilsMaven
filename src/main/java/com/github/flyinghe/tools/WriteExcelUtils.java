@@ -16,7 +16,7 @@ import java.util.*;
  * <p>
  * 本类用于将JavaBean写入Excel文档中。
  * </p>
- * 此工具类已被废弃,请使用{@link ExcelWriter}替代
+ * 此工具类已被废弃并不再维护,请使用{@link ExcelWriter}替代
  */
 @Deprecated
 public class WriteExcelUtils {
@@ -58,6 +58,10 @@ public class WriteExcelUtils {
             cell.setCellValue((Byte) value);
         } else if (value instanceof Short) {
             cell.setCellValue((Short) value);
+        } else if (value instanceof Long) {
+            cell.setCellValue((Long) value);
+        } else if (value instanceof Character) {
+            cell.setCellValue(((Character) value).toString());
         } else {
             cell.setCellValue(value.toString());
         }

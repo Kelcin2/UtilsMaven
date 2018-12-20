@@ -1,7 +1,6 @@
 package com.github.flyinghe.tools;
 
 import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +33,7 @@ public class CommonUtils {
      * @param clazz    需要转换成的Bean
      * @return 返回一个封装好的Bean类实例，封装失败返回null
      */
-    public static <T extends Object> T toBean(Map<String, ? extends Object> property, Class<T> clazz) {
+    public static <T> T toBean(Map<String, ?> property, Class<T> clazz) {
         T bean = null;
         try {
             bean = clazz.newInstance();
@@ -52,18 +51,11 @@ public class CommonUtils {
      * @param bean 需要转换的Bean对象
      * @return 返回一个Map , 失败返回null
      */
-    public static <T extends Object> Map<String, Object> toMap(T bean) {
+    public static <T> Map<String, Object> toMap(T bean) {
         Map<String, Object> map = null;
         try {
             map = PropertyUtils.describe(bean);
             map.remove("class");
-            StringBuilder methodName = new StringBuilder("get");
-            for (String property : map.keySet()) {
-                methodName.delete(3, methodName.length()).append(property.substring(0, 1).toUpperCase())
-                        .append(property.substring(1));
-                Object o = MethodUtils.invokeMethod(bean, methodName.toString(), null);
-                map.put(property, o);
-            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -77,7 +69,7 @@ public class CommonUtils {
      * @param bean     需要修改的Bean类
      * @return 返回一个属性已修改的Bean类实例
      */
-    public static <T extends Object> T modifyBean(Map<String, ? extends Object> property, T bean) {
+    public static <T> T modifyBean(Map<String, ?> property, T bean) {
         try {
             BeanUtils.populate(bean, property);
             return bean;
@@ -92,8 +84,7 @@ public class CommonUtils {
      * @param bean 被复制的对象
      * @return 返回一个被复制对象的一个副本
      */
-    @SuppressWarnings("unchecked")
-    public static <T extends Object> T cloneBean(T bean) {
+    public static <T> T cloneBean(T bean) {
         try {
             T newBean = (T) BeanUtils.cloneBean(bean);
             return newBean;

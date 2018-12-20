@@ -448,6 +448,10 @@ public class XLSXWriter<T> {
             cell.setCellValue((Byte) value);
         } else if (value instanceof Short) {
             cell.setCellValue((Short) value);
+        } else if (value instanceof Long) {
+            cell.setCellValue((Long) value);
+        } else if (value instanceof Character) {
+            cell.setCellValue(((Character) value).toString());
         } else {
             cell.setCellValue(value.toString());
         }
