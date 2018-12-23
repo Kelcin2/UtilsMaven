@@ -1,9 +1,14 @@
 package com.github.flyinghe.test;
 
+import com.github.flyinghe.depdcy.ExcelHandler;
 import com.github.flyinghe.domain.Student;
+import com.github.flyinghe.exception.ReadExcelException;
 import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.WriteExcelUtils;
-import com.github.flyinghe.tools.XLSXWriter;
+import com.github.flyinghe.tools.XLSXReader;
+import com.github.flyinghe.tools.XLSXWriter1;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
@@ -11,6 +16,7 @@ import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -24,8 +30,8 @@ public class TestExcelUtils {
         List<String> titles =
                 CommonUtils.arrayToList(new String[]{"姓名", "年龄", "价格", "价格们", "字节", "短整型", "电子邮箱", "手机号", "日期"});
         File file = new File("C:\\Users\\FlyingHe\\Desktop", "students.xlsx");
-        XLSXWriter<Student> xlsxWriter =
-                new XLSXWriter<Student>(file, 500000, props, null, true, "yyyy-MM-dd HH:mm:ss", true, titles, true);
+        XLSXWriter1<Student> xlsxWriter1 =
+                new XLSXWriter1<Student>(file, 500000, props, null, true, "yyyy-MM-dd HH:mm:ss", true, titles, true);
         List<Student> studentList = new ArrayList<>();
         System.out.println("============================Start=========================");
         long s = System.currentTimeMillis();
@@ -42,51 +48,51 @@ public class TestExcelUtils {
             student.setDate(new Date(new Date().getTime() + i * 1000L));
             studentList.add(student);
             if ((i + 1) % 30000 == 0) {
-                xlsxWriter.write(studentList);
+                xlsxWriter1.write(studentList);
                 studentList.clear();
-                System.out.println("props:" + xlsxWriter.getProperties().size());
+                System.out.println("props:" + xlsxWriter1.getProperties().size());
                 System.out
-                        .println("titls:" + (xlsxWriter.getTitles() == null ? "null" : xlsxWriter.getTitles().size()));
+                        .println("titls:" + (xlsxWriter1.getTitles() == null ? "null" : xlsxWriter1.getTitles().size()));
                 System.out.println(
-                        "exclude:" + (xlsxWriter.getExcludeProps() == null ? "null" :
-                                xlsxWriter.getExcludeProps().size()));
-                System.out.println("realRowInSheet:" + xlsxWriter.getRealRowInSheet());
-                System.out.println("realDataInSheet:" + xlsxWriter.getRealDataInSheet());
-                System.out.println("realRowInExcel:" + xlsxWriter.getRealRowInExcel());
-                System.out.println("realDataInExcel:" + xlsxWriter.getRealDataInExcel());
-                System.out.println("allSheetInExcel:" + xlsxWriter.getAllSheetInExcel());
+                        "exclude:" + (xlsxWriter1.getExcludeProps() == null ? "null" :
+                                xlsxWriter1.getExcludeProps().size()));
+                System.out.println("realRowInSheet:" + xlsxWriter1.getRealRowInSheet());
+                System.out.println("realDataInSheet:" + xlsxWriter1.getRealDataInSheet());
+                System.out.println("realRowInExcel:" + xlsxWriter1.getRealRowInExcel());
+                System.out.println("realDataInExcel:" + xlsxWriter1.getRealDataInExcel());
+                System.out.println("allSheetInExcel:" + xlsxWriter1.getAllSheetInExcel());
                 System.out.println("===================================");
             }
         }
         if (!studentList.isEmpty()) {
-            xlsxWriter.write(studentList);
+            xlsxWriter1.write(studentList);
             studentList.clear();
-            System.out.println("props:" + xlsxWriter.getProperties().size());
+            System.out.println("props:" + xlsxWriter1.getProperties().size());
             System.out
-                    .println("titls:" + (xlsxWriter.getTitles() == null ? "null" : xlsxWriter.getTitles().size()));
+                    .println("titls:" + (xlsxWriter1.getTitles() == null ? "null" : xlsxWriter1.getTitles().size()));
             System.out.println(
-                    "exclude:" + (xlsxWriter.getExcludeProps() == null ? "null" :
-                            xlsxWriter.getExcludeProps().size()));
-            System.out.println("realRowInSheet:" + xlsxWriter.getRealRowInSheet());
-            System.out.println("realDataInSheet:" + xlsxWriter.getRealDataInSheet());
-            System.out.println("realRowInExcel:" + xlsxWriter.getRealRowInExcel());
-            System.out.println("realDataInExcel:" + xlsxWriter.getRealDataInExcel());
-            System.out.println("allSheetInExcel:" + xlsxWriter.getAllSheetInExcel());
+                    "exclude:" + (xlsxWriter1.getExcludeProps() == null ? "null" :
+                            xlsxWriter1.getExcludeProps().size()));
+            System.out.println("realRowInSheet:" + xlsxWriter1.getRealRowInSheet());
+            System.out.println("realDataInSheet:" + xlsxWriter1.getRealDataInSheet());
+            System.out.println("realRowInExcel:" + xlsxWriter1.getRealRowInExcel());
+            System.out.println("realDataInExcel:" + xlsxWriter1.getRealDataInExcel());
+            System.out.println("allSheetInExcel:" + xlsxWriter1.getAllSheetInExcel());
             System.out.println("===================================");
         }
-        xlsxWriter.endWrite();
+        xlsxWriter1.endWrite();
         long e = System.currentTimeMillis();
         System.out.println("============================Done=========================");
-        System.out.println("一共写入数据量(包含标题):" + xlsxWriter.getRealRowInExcel());
-        System.out.println("一共写入数据量(不包含标题):" + xlsxWriter.getRealDataInExcel());
-        System.out.println("一共写入页数:" + xlsxWriter.getAllSheetInExcel());
+        System.out.println("一共写入数据量(包含标题):" + xlsxWriter1.getRealRowInExcel());
+        System.out.println("一共写入数据量(不包含标题):" + xlsxWriter1.getRealDataInExcel());
+        System.out.println("一共写入页数:" + xlsxWriter1.getAllSheetInExcel());
         System.out.println("一共耗时:" + (e - s) + "ms");
     }
 
     @Test
     public void test5() throws Exception {
-        XLSXWriter<Student> xlsxWriter =
-                new XLSXWriter<>(new File("C:\\Users\\FlyingHe\\Desktop", "datas1.xlsx"),
+        XLSXWriter1<Student> xlsxWriter1 =
+                new XLSXWriter1<>(new File("C:\\Users\\FlyingHe\\Desktop", "datas1.xlsx"),
                         3, null, true, null, null, true, null, true);
         Student student = new Student();
         student.setName("name");
@@ -98,31 +104,31 @@ public class TestExcelUtils {
         student.setEmail("Email:");
         student.setTel("Tel:");
         student.setDate(new Date());
-        xlsxWriter.write(student);
-        xlsxWriter.write(new Student());
-        xlsxWriter.write(new Student());//
-        xlsxWriter.write(student);
-//        xlsxWriter.write(student);
-        xlsxWriter.write(new Student());
-        xlsxWriter.endWrite();
-        System.out.println("RelRow:" + xlsxWriter.getRealRowInExcel());
-        System.out.println("RelData:" + xlsxWriter.getRealDataInExcel());
-        System.out.println("AllSheetInExcel:" + xlsxWriter.getAllSheetInExcel());
+        xlsxWriter1.write(student);
+        xlsxWriter1.write(new Student());
+        xlsxWriter1.write(new Student());//
+        xlsxWriter1.write(student);
+//        xlsxWriter1.write(student);
+        xlsxWriter1.write(new Student());
+        xlsxWriter1.endWrite();
+        System.out.println("RelRow:" + xlsxWriter1.getRealRowInExcel());
+        System.out.println("RelData:" + xlsxWriter1.getRealDataInExcel());
+        System.out.println("AllSheetInExcel:" + xlsxWriter1.getAllSheetInExcel());
     }
 
     @Test
     public void test4() throws Exception {
         List<String> excludeProps = new ArrayList<>();
         excludeProps.add("Price");
-        XLSXWriter<Map<String, Object>> xlsxWriter =
-                new XLSXWriter<>(new File("C:\\Users\\FlyingHe\\Desktop", "datas1.xlsx"),
+        XLSXWriter1<Map<String, Object>> xlsxWriter1 =
+                new XLSXWriter1<>(new File("C:\\Users\\FlyingHe\\Desktop", "datas1.xlsx"),
                         101, null, true, excludeProps, null, true, null, false);
-        Font font1 = xlsxWriter.createFont();
-        CellStyle dataCellStyle = xlsxWriter.createCellStyle();
+        Font font1 = xlsxWriter1.createFont();
+        CellStyle dataCellStyle = xlsxWriter1.createCellStyle();
         dataCellStyle.setFont(font1);
         dataCellStyle.setAlignment(HorizontalAlignment.CENTER);
         dataCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        xlsxWriter.setDefaultCellStyle(dataCellStyle);
+        xlsxWriter1.setDefaultCellStyle(dataCellStyle);
 
         List<Map<String, Object>> list = new ArrayList<>();
         long s = System.currentTimeMillis();
@@ -145,17 +151,17 @@ public class TestExcelUtils {
             }
             list.add(student);
             if ((i + 1) % 100 == 0) {
-                xlsxWriter.setDefaultCellStyle(dataCellStyle);
-                xlsxWriter.write(list);
+                xlsxWriter1.setDefaultCellStyle(dataCellStyle);
+                xlsxWriter1.write(list);
                 list.clear();
-                System.out.println("已经写入数据量:" + xlsxWriter.getRealRowInExcel());
+                System.out.println("已经写入数据量:" + xlsxWriter1.getRealRowInExcel());
             }
         }
-        xlsxWriter.endWrite();
+        xlsxWriter1.endWrite();
         System.out.println("================Done================");
         long e = System.currentTimeMillis();
-        System.out.println("一共写入数据量:" + xlsxWriter.getRealRowInExcel());
-        System.out.println("Sheet数:" + (xlsxWriter.getAllSheetInExcel()));
+        System.out.println("一共写入数据量:" + xlsxWriter1.getRealRowInExcel());
+        System.out.println("Sheet数:" + (xlsxWriter1.getAllSheetInExcel()));
         System.out.println("一共耗时:" + (e - s) + "ms");
     }
 
@@ -167,8 +173,8 @@ public class TestExcelUtils {
         List<String> props = new ArrayList<>();
         props.add("email");
         props.add("date");
-        XLSXWriter<Student> xlsxWriter =
-                new XLSXWriter<>(new File("C:\\Users\\FlyingHe\\Desktop", "datas2.xlsx")
+        XLSXWriter1<Student> xlsxWriter1 =
+                new XLSXWriter1<>(new File("C:\\Users\\FlyingHe\\Desktop", "datas2.xlsx")
                         , -1, props, true, excludeProps, null, true, null, false);
 
         List<Student> list = new ArrayList<>();
@@ -187,29 +193,27 @@ public class TestExcelUtils {
             student.setDate(new Date(new Date().getTime() + i * 1000L));
             list.add(student);
             if ((i + 1) % 100 == 0) {
-                xlsxWriter.write(list);
+                xlsxWriter1.write(list);
                 list.clear();
                 System.out.println("已经写入数据量:" + (i + 1));
             }
         }
-        xlsxWriter.endWrite();
+        xlsxWriter1.endWrite();
         System.out.println("================Done================");
         long e = System.currentTimeMillis();
-        System.out.println("一共写入数据量:" + xlsxWriter.getRealRowInExcel());
+        System.out.println("一共写入数据量:" + xlsxWriter1.getRealRowInExcel());
         System.out.println("一共耗时:" + (e - s) + "ms");
     }
 
     @Test
     public void test1() throws Exception {
         List<Map<String, Object>> datas = new ArrayList<>();
-        for (int i = 0; i < 2000; i++) {
+        for (int i = 0; i < 200; i++) {
             Map<String, Object> data = new HashMap<>();
             data.put("name", "name" + i);
-            data.put("age", "age" + i);
-            data.put("nickname", "nickname" + i);
-            data.put("sex", "sex" + i);
-            data.put("look", "look" + i);
             data.put("date", new Date(new Date().getTime() + i * 24 * 3600000L));
+            data.put("price", 0.1D);
+            data.put("boolean", true);
             datas.add(data);
         }
         File file = new File("C:\\Users\\FlyingHe\\Desktop", "datas.xlsx");
@@ -218,13 +222,20 @@ public class TestExcelUtils {
 
     @Test
     public void test2() throws Exception {
-        Object value = true;
-//        boolean _value = true;
-//        value = _value;
-        if (value instanceof Boolean) {
-            System.out.println(true);
-        } else {
-            System.out.println(false);
-        }
+
+        OPCPackage p = OPCPackage.open(new File("C:\\Users\\FlyingHe\\Desktop", "datas.xlsx"), PackageAccess.READ);
+        XLSXReader reader = null;
+        reader = new XLSXReader(p, 2, 500, new ExcelHandler() {
+            @Override
+            public void callback(int currentRowInSheet, int currentSheetInExcel, int realRowInSheet, int realRowInExcel,
+                                 int allSheetInExcel, List<String> titles, List<String> columns,
+                                 List<Map<String, Object>> datas) throws ReadExcelException {
+                try {
+                    p.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 }
