@@ -133,7 +133,7 @@ public class TestXLSXWriter {
         xlsxWriter.getDateFormatMapping().put("dateType", "yyyy.MM.dd");
         xlsxWriter.getDateFormatMapping().put("calendarType", "yyyy-MM-dd HH:mm:ss");
         xlsxWriter.putBooleanMapping("booleanType", "是", "否");
-        xlsxWriter.getColumnWidthMapping().put("dateType", 40);
+        xlsxWriter.getColumnWidthMapping().put("dateType", -40);
         xlsxWriter.getColumnWidthMapping().put("calendarType", 40);
         xlsxWriter.getCellStyleMapping().put("booleanType",
                 this.produceCellStyle(xlsxWriter, IndexedColors.SKY_BLUE.getIndex(), IndexedColors.BLACK.getIndex()));

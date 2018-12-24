@@ -219,15 +219,15 @@ public abstract class AbstractExcelWriter<T> {
      */
     private Map<String, CellStyle> titleCellStyleMapping = null;
     /**
-     * 默认行高(即每一行的行高,该行高只针对数据行的行高,不包括标题行的行高;&lt;0表示使用默认值)
+     * 默认行高(即每一行的行高,该行高只针对数据行的行高,不包括标题行的行高;&lt;=0表示使用默认值)
      */
     private float defaultHeight = -1;
     /**
-     * 默认标题行行高(该行高只针对标题行的行高;&lt;0表示使用默认值)
+     * 默认标题行行高(该行高只针对标题行的行高;&lt;=0表示使用默认值)
      */
     private float defaultTitleHeight = -1;
     /**
-     * 默认列宽(即每一列的列宽),用户可以覆盖此值(&lt;0表示使用默认值16)
+     * 默认列宽(即每一列的列宽),用户可以覆盖此值(&lt;=0表示使用默认值16)
      */
     private int defaultColumnWidth = 16;
     /**
@@ -482,15 +482,21 @@ public abstract class AbstractExcelWriter<T> {
      * 设置默认列宽
      *
      * @param defaultColumnWidth 默认列宽
+     * @see #defaultColumnWidth
      */
     public void setDefaultColumnWidth(int defaultColumnWidth) {
-        this.defaultColumnWidth = defaultColumnWidth;
+        if (defaultColumnWidth > 0) {
+            this.defaultColumnWidth = defaultColumnWidth;
+        } else {
+            this.defaultColumnWidth = 16;
+        }
     }
 
     /**
-     * 获取属性名到列宽的映射
+     * 获取属性名到列宽的映射(&lt;=0表示使用默认值)
      *
      * @return 返回属性名到列宽的映射
+     * @see #defaultColumnWidth
      */
     public Map<String, Integer> getColumnWidthMapping() {
         if (null == this.columnWidthMapping) {
@@ -845,7 +851,8 @@ public abstract class AbstractExcelWriter<T> {
         this.currentSheet = this.workbook.createSheet();
         for (int i = 0; i < this.properties.size(); i++) {
             if (MapUtils.isNotEmpty(this.columnWidthMapping) &&
-                    null != this.columnWidthMapping.get(this.properties.get(i))) {
+                    null != this.columnWidthMapping.get(this.properties.get(i))
+                    && 0 > Integer.valueOf(0).compareTo(this.columnWidthMapping.get(this.properties.get(i)))) {
                 //若此属性存在列宽的映射则采用此映射
                 this.currentSheet.setColumnWidth(i, this.columnWidthMapping.get(this.properties.get(i)) * 256);
             } else {
