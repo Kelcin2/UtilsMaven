@@ -843,14 +843,14 @@ public abstract class AbstractExcelWriter<T> {
      */
     protected void initSheet() throws WriteExcelException {
         this.currentSheet = this.workbook.createSheet();
-        //先设置整个Sheet的默认列宽
-        this.currentSheet.setDefaultColumnWidth(this.defaultColumnWidth);
-        if (MapUtils.isNotEmpty(this.columnWidthMapping)) {
-            for (int i = 0; i < this.properties.size(); i++) {
-                if (null != this.columnWidthMapping.get(this.properties.get(i))) {
-                    //若此属性存在列宽的映射则采用此映射
-                    this.currentSheet.setColumnWidth(i, this.columnWidthMapping.get(this.properties.get(i)) * 256);
-                }
+        for (int i = 0; i < this.properties.size(); i++) {
+            if (MapUtils.isNotEmpty(this.columnWidthMapping) &&
+                    null != this.columnWidthMapping.get(this.properties.get(i))) {
+                //若此属性存在列宽的映射则采用此映射
+                this.currentSheet.setColumnWidth(i, this.columnWidthMapping.get(this.properties.get(i)) * 256);
+            } else {
+                //若此属性不存在列宽的映射则采用默认值
+                this.currentSheet.setColumnWidth(i, this.defaultColumnWidth * 256);
             }
         }
         this.allSheetInExcel++;
