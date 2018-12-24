@@ -2,7 +2,6 @@ package com.github.flyinghe.depdcy;
 
 import com.github.flyinghe.exception.WriteExcelException;
 import com.github.flyinghe.tools.CommonUtils;
-import com.github.flyinghe.tools.ExcelWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -50,13 +49,11 @@ public abstract class AbstractExcelWriter<T> {
      */
     public static final int XLS = 2;
     /**
-     * 此常量用于{@link ExcelWriter.HandleCellValue#callback(String, Object, AbstractExcelWriter)}
-     * 回调入参map的key值
+     * @see #map
      */
     public static final String CELL_STYLE = "cellStyle";
     /**
-     * 此常量用于{@link ExcelWriter.HandleCellValue#callback(String, Object, AbstractExcelWriter)}
-     * 回调入参map的key值
+     * @see #map
      */
     public static final String CELL_VALUE = "cellValue";
     /**
@@ -97,7 +94,6 @@ public abstract class AbstractExcelWriter<T> {
      * 记录上一行Row对象(当不需要写入空行时需要)
      */
     private Row lastRow = null;
-
     /**
      * 记录整个Excel文档的非空行(若指定了写入标题则会计算标题行),
      * 不会计算预留行,1-based
@@ -115,14 +111,16 @@ public abstract class AbstractExcelWriter<T> {
      * 自定义cellStyle池,专门用于自定义的一些可复用的cellStyle,
      * 一般配合回调函数使用。
      *
-     * @see ExcelWriter.HandleCellValue#callback(String, Object, AbstractExcelWriter)
+     * @see AbstractExcelWriter.HandleCellValue
      */
     private Map<String, CellStyle> cellStylePool = null;
     /**
-     * 用于修改默认而采用自定的cellValue或者cellStyle。需配合{@link ExcelWriter.HandleCellValue}使用
+     * 用于修改默认而采用自定的cellValue或者cellStyle。需配合{@link AbstractExcelWriter.HandleCellValue}使用。
+     * 最多两个元素,Key命名参照:{@link #CELL_STYLE};{@link #CELL_VALUE}
      *
-     * @see ExcelWriter.HandleCellValue
-     * @see ExcelWriter.HandleCellValue#callback(String, Object, AbstractExcelWriter)
+     * @see AbstractExcelWriter.HandleCellValue
+     * @see #CELL_STYLE
+     * @see #CELL_VALUE
      */
     private Map<String, Object> map = null;
     /******************************************************************************************************/
@@ -158,8 +156,8 @@ public abstract class AbstractExcelWriter<T> {
      * ,所有数据会写在一个Sheet中(注意,若此页已经达到Excel规定最大值,则会强制换页,
      * 最大值包括预留行,标题行以及数据行)
      *
-     * @see ExcelWriter#XLS_ROW_MOST
-     * @see ExcelWriter#XLSX_ROW_MOST
+     * @see AbstractExcelWriter#XLS_ROW_MOST
+     * @see AbstractExcelWriter#XLSX_ROW_MOST
      */
     private int limit = -1;
     /**
@@ -242,13 +240,13 @@ public abstract class AbstractExcelWriter<T> {
     /**
      * handleRowReserved callback
      *
-     * @see ExcelWriter.HandleRowReserved
+     * @see AbstractExcelWriter.HandleRowReserved
      */
     private HandleRowReserved<T> handleRowReserved = null;
     /**
      * handleCellValue callback
      *
-     * @see ExcelWriter.HandleCellValue
+     * @see AbstractExcelWriter.HandleCellValue
      */
     private HandleCellValue<T> handleCellValue = null;
 
@@ -350,7 +348,7 @@ public abstract class AbstractExcelWriter<T> {
 
     /**
      * 将value放入到map中,
-     * 此方法在{@link ExcelWriter.HandleCellValue}
+     * 此方法在{@link AbstractExcelWriter.HandleCellValue}
      * 回调中使用
      *
      * @param value 需要被放入的值
@@ -363,7 +361,7 @@ public abstract class AbstractExcelWriter<T> {
 
     /**
      * 将cellStyle放入到map中,
-     * 此方法在{@link ExcelWriter.HandleCellValue}
+     * 此方法在{@link AbstractExcelWriter.HandleCellValue}
      * 回调中使用
      *
      * @param cellStyle 需要被放入的cellStyle
@@ -790,7 +788,7 @@ public abstract class AbstractExcelWriter<T> {
      * @param data 指定写入数据
      * @return 若此行至少有一个非空单元格则返回true, 换言之, 此行写入完毕后仍为空行的话返回false, 非空行返回true
      */
-    private boolean writePerRow(Row row, Map<String, Object> data) throws WriteExcelException {
+    private boolean writePerRow(Row row, Map<String, Object> data, T originData) throws WriteExcelException {
         boolean isNotBlankRow = false;
         //标识当前写入的列
         int currenCol = -1;
@@ -800,7 +798,7 @@ public abstract class AbstractExcelWriter<T> {
                 Cell cell = row.createCell(currenCol);
                 if (this.handleCellValue != null) {
                     this.map.clear();
-                    this.handleCellValue.callback(property, data.get(property), this);
+                    this.handleCellValue.callback(property, data.get(property), originData, this);
                 }
                 CellStyle cellStyleTemp = this.defaultCellStyle;
                 Object value = data.get(property);
@@ -918,7 +916,7 @@ public abstract class AbstractExcelWriter<T> {
             //上一行是空行,并且配置了需要跳过空行,即不需要写入空行
             rowTemp = this.lastRow;
         }
-        boolean isBlankRow = !this.writePerRow(rowTemp, mapBean);
+        boolean isBlankRow = !this.writePerRow(rowTemp, mapBean, data);
         if (!isBlankRow) {
             //非空行
             this.realRowInExcel++;
@@ -1011,10 +1009,10 @@ public abstract class AbstractExcelWriter<T> {
      */
     public interface HandleRowReserved<T> {
         /**
-         * 当写入每个Sheet的预留行时调用,你可以使用此回调对预留行的内容进行自定义
+         * 详情参见{@link AbstractExcelWriter.HandleRowReserved}
          *
          * @param sheet  当前正在写入的Sheet
-         * @param writer 当前ExcelWriter对象
+         * @param writer 当前{@link AbstractExcelWriter}实现类对象,可以使用此对象获取{@link CellStyle}和{@link org.apache.poi.ss.usermodel.Font}对象
          */
         public void callback(Sheet sheet, AbstractExcelWriter<T> writer) throws WriteExcelException;
     }
@@ -1032,16 +1030,17 @@ public abstract class AbstractExcelWriter<T> {
      */
     public interface HandleCellValue<T> {
         /**
-         * 详情参见{@link ExcelWriter.HandleCellValue}
+         * 详情参见{@link AbstractExcelWriter.HandleCellValue}
          *
          * @param property 该数据单元格对应的属性名
          * @param value    该数据单元格对应的数据值
-         * @param writer   当前{@link ExcelWriter}对象,可以使用此对象获取{@link CellStyle}和@{@link org.apache.poi.ss.usermodel.Font}对象,
+         * @param data     该行数据
+         * @param writer   当前{@link AbstractExcelWriter}实现类对象,可以使用此对象获取{@link CellStyle}和{@link org.apache.poi.ss.usermodel.Font}对象,
          *                 自定义的cellStyle需要放入{@link #cellStylePool}中以便复用,因为POI对cellStyle对象的创建数量有限制
          * @see #cellStylePool
          * @see #map
          */
-        public void callback(String property, Object value, AbstractExcelWriter<T> writer)
+        public void callback(String property, Object value, T data, AbstractExcelWriter<T> writer)
                 throws WriteExcelException;
     }
 }

@@ -249,7 +249,7 @@ public class TestXLSXWriter {
         });
         xlsxWriter.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
             @Override
-            public void callback(String property, Object value, AbstractExcelWriter<TestObj> writer)
+            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
                     throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
@@ -322,7 +322,7 @@ public class TestXLSXWriter {
         });
         xlsxWriter1.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
             @Override
-            public void callback(String property, Object value, AbstractExcelWriter<TestObj> writer)
+            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
                     throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
@@ -410,7 +410,7 @@ public class TestXLSXWriter {
         });
         xlsxWriter.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
             @Override
-            public void callback(String property, Object value, AbstractExcelWriter<TestObj> writer)
+            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
                     throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
