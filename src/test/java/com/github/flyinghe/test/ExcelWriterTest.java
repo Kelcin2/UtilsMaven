@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Created by FlyingHe on 2018/12/19.
  */
-public class TestExcelWriter {
+public class ExcelWriterTest {
     private File file1 = new File("C:\\Users\\FlyingHe\\Desktop", "datas1.xlsx");
     private File file2 = new File("C:\\Users\\FlyingHe\\Desktop", "datas2.xlsx");
     private File file3 = new File("C:\\Users\\FlyingHe\\Desktop", "datas3.xls");

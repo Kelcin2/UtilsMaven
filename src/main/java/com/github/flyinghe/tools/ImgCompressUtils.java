@@ -15,7 +15,7 @@ import java.io.*;
  *
  * @author Flyinghe
  */
-public class ImgUtils {
+public class ImgCompressUtils {
     //指定等比例压缩图片根据图片高压缩
     public static final int HEIGHT = 0;
     //指定等比例压缩图片根据图片宽压缩
@@ -23,7 +23,7 @@ public class ImgUtils {
     //指定等比例压缩图片不改变源图片宽高
     public static final int NO_CHANGE = 2;
 
-    private ImgUtils() {}
+    private ImgCompressUtils() {}
 
     /**
      * 根据指定宽高和压缩质量进行压缩，如果指定宽或者高大于源图片则按照源图片大小宽高压缩
@@ -35,7 +35,7 @@ public class ImgUtils {
      * @param quality 指定压缩质量，范围[0.0,1.0]，如果指定为null则按照默认值
      */
     public static void imgCompressByWH(String srcFile, String desFile, int width, int height, Float quality) {
-        ImgUtils.imgCompressByWH(srcFile, desFile, width, height, quality, false);
+        ImgCompressUtils.imgCompressByWH(srcFile, desFile, width, height, quality, false);
     }
 
     /**
@@ -61,7 +61,7 @@ public class ImgUtils {
             BufferedImage desImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             //根据源图片绘制目标图片
             desImg.getGraphics().drawImage(srcImg, 0, 0, width, height, null);
-            ImgUtils.encodeImg(desFile, desImg, quality);
+            ImgCompressUtils.encodeImg(desFile, desImg, quality);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -82,7 +82,7 @@ public class ImgUtils {
         BufferedImage bufferedImage = null;
         try {
             bufferedImage =
-                    ImgUtils.imgCompressByWH(ImageIO.read(new File(srcFile)), width, height, quality, isForceWh);
+                    ImgCompressUtils.imgCompressByWH(ImageIO.read(new File(srcFile)), width, height, quality, isForceWh);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -104,7 +104,7 @@ public class ImgUtils {
                                                 boolean isForceWh) {
         BufferedImage bufferedImage = null;
         try {
-            bufferedImage = ImgUtils.imgCompressByWH(ImageIO.read(srcStream), width, height, quality, isForceWh);
+            bufferedImage = ImgCompressUtils.imgCompressByWH(ImageIO.read(srcStream), width, height, quality, isForceWh);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -132,7 +132,7 @@ public class ImgUtils {
         BufferedImage desImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         //根据源图片绘制目标图片
         desImg.getGraphics().drawImage(srcImg, 0, 0, width, height, null);
-        return ImgUtils.encodeImg(desImg, quality);
+        return ImgCompressUtils.encodeImg(desImg, quality);
     }
 
     /**
@@ -223,12 +223,12 @@ public class ImgUtils {
      * @param srcFile 源图片地址
      * @param desFile 目标图片地址，包括图片名称
      * @param base    指定压缩后图片的宽或者高
-     * @param wh      此参数用于指定base参数是宽还是高，该参数应由{@link ImgUtils}里的
+     * @param wh      此参数用于指定base参数是宽还是高，该参数应由{@link ImgCompressUtils}里的
      *                静态常量指定
      * @param quality 指定压缩质量，范围[0.0,1.0],如果指定为null则按照默认值
      */
     public static void imgCompressByScale(String srcFile, String desFile, double base, int wh, Float quality) {
-        ImgUtils.imgCompressByScale(srcFile, desFile, base, wh, quality, false);
+        ImgCompressUtils.imgCompressByScale(srcFile, desFile, base, wh, quality, false);
     }
 
     /**
@@ -239,7 +239,7 @@ public class ImgUtils {
      * @param srcFile   源图片地址
      * @param desFile   目标图片地址，包括图片名称
      * @param base      指定压缩后图片的宽或者高
-     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgUtils}里的
+     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgCompressUtils}里的
      *                  静态常量指定
      * @param quality   指定压缩质量，范围[0.0,1.0],如果指定为null则按照默认值
      * @param isForceWh 指定是否强制使用指定宽高进行等比例压缩,true代表强制,false反之
@@ -250,7 +250,7 @@ public class ImgUtils {
         int height = 0;
         try {
             Image srcImg = ImageIO.read(new File(srcFile));
-            if (wh == ImgUtils.HEIGHT) {
+            if (wh == ImgCompressUtils.HEIGHT) {
                 if (base > srcImg.getHeight(null) && !isForceWh) {
                     width = srcImg.getWidth(null);
                     height = srcImg.getHeight(null);
@@ -259,7 +259,7 @@ public class ImgUtils {
                     height = (int) Math.floor(base);
                     width = (int) Math.floor((srcImg.getWidth(null) * base / srcImg.getHeight(null)));
                 }
-            } else if (wh == ImgUtils.WIDTH) {
+            } else if (wh == ImgCompressUtils.WIDTH) {
                 //根据宽度等比例设置宽高
                 if (base > srcImg.getWidth(null) && !isForceWh) {
                     height = srcImg.getHeight(null);
@@ -268,7 +268,7 @@ public class ImgUtils {
                     width = (int) Math.floor(base);
                     height = (int) Math.floor((srcImg.getHeight(null) * base / srcImg.getWidth(null)));
                 }
-            } else if (wh == ImgUtils.NO_CHANGE) {
+            } else if (wh == ImgCompressUtils.NO_CHANGE) {
                 //不改变原始宽高
                 height = srcImg.getHeight(null);
                 width = srcImg.getWidth(null);
@@ -293,7 +293,7 @@ public class ImgUtils {
      *
      * @param srcFile   源图片地址
      * @param base      指定压缩后图片的宽或者高
-     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgUtils}里的
+     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgCompressUtils}里的
      *                  静态常量指定
      * @param quality   指定压缩质量，范围[0.0,1.0],如果指定为null则按照默认值
      * @param isForceWh 指定是否强制使用指定宽高进行等比例压缩,true代表强制,false反之
@@ -303,7 +303,8 @@ public class ImgUtils {
                                                    boolean isForceWh) {
         BufferedImage bufferedImage = null;
         try {
-            bufferedImage = ImgUtils.imgCompressByScale(ImageIO.read(new File(srcFile)), base, wh, quality, isForceWh);
+            bufferedImage = ImgCompressUtils
+                    .imgCompressByScale(ImageIO.read(new File(srcFile)), base, wh, quality, isForceWh);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -317,7 +318,7 @@ public class ImgUtils {
      *
      * @param srcStream 源图片输入流
      * @param base      指定压缩后图片的宽或者高
-     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgUtils}里的
+     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgCompressUtils}里的
      *                  静态常量指定
      * @param quality   指定压缩质量，范围[0.0,1.0],如果指定为null则按照默认值
      * @param isForceWh 指定是否强制使用指定宽高进行等比例压缩,true代表强制,false反之
@@ -327,7 +328,7 @@ public class ImgUtils {
                                                    boolean isForceWh) {
         BufferedImage bufferedImage = null;
         try {
-            bufferedImage = ImgUtils.imgCompressByScale(ImageIO.read(srcStream), base, wh, quality, isForceWh);
+            bufferedImage = ImgCompressUtils.imgCompressByScale(ImageIO.read(srcStream), base, wh, quality, isForceWh);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -341,7 +342,7 @@ public class ImgUtils {
      *
      * @param srcImg    源图片地址
      * @param base      指定压缩后图片的宽或者高
-     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgUtils}里的
+     * @param wh        此参数用于指定base参数是宽还是高，该参数应由{@link ImgCompressUtils}里的
      *                  静态常量指定
      * @param quality   指定压缩质量，范围[0.0,1.0],如果指定为null则按照默认值
      * @param isForceWh 指定是否强制使用指定宽高进行等比例压缩,true代表强制,false反之
@@ -353,7 +354,7 @@ public class ImgUtils {
         int height = 0;
         BufferedImage bufferedImage = null;
         try {
-            if (wh == ImgUtils.HEIGHT) {
+            if (wh == ImgCompressUtils.HEIGHT) {
                 if (base > srcImg.getHeight(null) && !isForceWh) {
                     width = srcImg.getWidth(null);
                     height = srcImg.getHeight(null);
@@ -362,7 +363,7 @@ public class ImgUtils {
                     height = (int) Math.floor(base);
                     width = (int) Math.floor((srcImg.getWidth(null) * base / srcImg.getHeight(null)));
                 }
-            } else if (wh == ImgUtils.WIDTH) {
+            } else if (wh == ImgCompressUtils.WIDTH) {
                 //根据宽度等比例设置宽高
                 if (base > srcImg.getWidth(null) && !isForceWh) {
                     height = srcImg.getHeight(null);
@@ -371,7 +372,7 @@ public class ImgUtils {
                     width = (int) Math.floor(base);
                     height = (int) Math.floor((srcImg.getHeight(null) * base / srcImg.getWidth(null)));
                 }
-            } else if (wh == ImgUtils.NO_CHANGE) {
+            } else if (wh == ImgCompressUtils.NO_CHANGE) {
                 //不改变原始宽高
                 height = srcImg.getHeight(null);
                 width = srcImg.getWidth(null);

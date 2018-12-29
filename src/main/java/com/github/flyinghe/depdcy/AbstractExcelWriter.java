@@ -5,7 +5,11 @@ import com.github.flyinghe.tools.CommonUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -293,9 +297,24 @@ public abstract class AbstractExcelWriter<T> {
      * 创建一个新的CellStyle
      *
      * @return 创建一个新的样式对象, 用户可以通过此对象重定义默认单元格样式
+     * @see #createXSSFCellStyle()
      */
     public CellStyle createCellStyle() {
         return this.workbook.createCellStyle();
+    }
+
+    /**
+     * 创建一个新的适用于XLSX类型Excel文件的CellStyle
+     *
+     * @return
+     * @throws WriteExcelException
+     * @see #createCellStyle()
+     */
+    public XSSFCellStyle createXSSFCellStyle() throws WriteExcelException {
+        if (XLSX != this.excelType) {
+            throw new WriteExcelException("仅适用于XLSX类型Excel文件使用");
+        }
+        return (XSSFCellStyle) this.createCellStyle();
     }
 
     /**
@@ -569,6 +588,62 @@ public abstract class AbstractExcelWriter<T> {
         }
         this.titles.clear();
         this.titles.addAll(titles);
+    }
+
+    /**
+     * 获取XLS类型Excel文件的自定义颜色板,可使用此颜色板使用RGB自定义颜色,
+     * 注意自定义的颜色会覆盖已有的颜色,你应该覆盖没有被使用过的颜色
+     *
+     * @return XLS类型Excel文件的自定义颜色板
+     * @throws WriteExcelException 异常
+     * @see #createXSSFCellStyle()
+     * @see #createXSSFColor(int, int, int, int)
+     */
+    public HSSFPalette getXLSPalette() throws WriteExcelException {
+        if (XLS != this.excelType) {
+            throw new WriteExcelException("此颜色板仅适用于XLS类型Excel文件使用");
+        }
+        return ((HSSFWorkbook) this.workbook).getCustomPalette();
+    }
+
+    /**
+     * 创建一个自定义颜色,仅适用于XLSX类型Excel文件。
+     * 你可以使用{@link XSSFCellStyle#setFillForegroundColor(XSSFColor)}
+     * 来使用自定义颜色
+     *
+     * @param r red
+     * @param g green
+     * @param b blue
+     * @return 一个新的自定义颜色
+     * @throws WriteExcelException 异常
+     * @see #createXSSFCellStyle()
+     * @see #createXSSFColor(int, int, int, int)
+     * @see #getXLSPalette()
+     */
+    public XSSFColor createXSSFColor(int r, int g, int b) throws WriteExcelException {
+        return this.createXSSFColor(r, g, b, 255);
+    }
+
+    /**
+     * 创建一个自定义颜色,仅适用于XLSX类型Excel文件。
+     * 你可以使用{@link XSSFCellStyle#setFillForegroundColor(XSSFColor)}
+     * 来使用自定义颜色
+     *
+     * @param r red
+     * @param g green
+     * @param b blue
+     * @param a alpha
+     * @return 一个新的自定义颜色
+     * @throws WriteExcelException 异常
+     * @see #createXSSFCellStyle()
+     * @see #createXSSFColor(int, int, int)
+     * @see #getXLSPalette()
+     */
+    public XSSFColor createXSSFColor(int r, int g, int b, int a) throws WriteExcelException {
+        if (XLSX != this.excelType) {
+            throw new WriteExcelException("此颜色仅适用于XLSX类型Excel文件使用");
+        }
+        return new XSSFColor(new java.awt.Color(r, g, b, a));
     }
 
     public AbstractExcelWriter() throws WriteExcelException {
