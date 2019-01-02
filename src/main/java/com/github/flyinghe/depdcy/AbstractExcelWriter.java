@@ -10,6 +10,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -297,7 +298,7 @@ public abstract class AbstractExcelWriter<T> {
      * 创建一个新的CellStyle
      *
      * @return 创建一个新的样式对象, 用户可以通过此对象重定义默认单元格样式
-     * @see #createXSSFCellStyle()
+     * @see #createXLSXCellStyle()
      */
     public CellStyle createCellStyle() {
         return this.workbook.createCellStyle();
@@ -307,10 +308,10 @@ public abstract class AbstractExcelWriter<T> {
      * 创建一个新的适用于XLSX类型Excel文件的CellStyle
      *
      * @return
-     * @throws WriteExcelException
+     * @throws WriteExcelException 异常
      * @see #createCellStyle()
      */
-    public XSSFCellStyle createXSSFCellStyle() throws WriteExcelException {
+    public XSSFCellStyle createXLSXCellStyle() throws WriteExcelException {
         if (XLSX != this.excelType) {
             throw new WriteExcelException("仅适用于XLSX类型Excel文件使用");
         }
@@ -324,6 +325,19 @@ public abstract class AbstractExcelWriter<T> {
      */
     public Font createFont() {
         return this.workbook.createFont();
+    }
+
+    /**
+     * 创建一个新的适用于XLSX类型Excel文件的Font
+     *
+     * @return 一个新的适用于XLSX类型Excel文件的Font
+     * @throws WriteExcelException 异常
+     */
+    public XSSFFont createXLSXFont() throws WriteExcelException {
+        if (XLSX != this.excelType) {
+            throw new WriteExcelException("仅适用于XLSX类型Excel文件使用");
+        }
+        return (XSSFFont) this.createFont();
     }
 
     /**
@@ -596,8 +610,8 @@ public abstract class AbstractExcelWriter<T> {
      *
      * @return XLS类型Excel文件的自定义颜色板
      * @throws WriteExcelException 异常
-     * @see #createXSSFCellStyle()
-     * @see #createXSSFColor(int, int, int, int)
+     * @see #createXLSXCellStyle()
+     * @see #createXLSXColor(int, int, int, int)
      */
     public HSSFPalette getXLSPalette() throws WriteExcelException {
         if (XLS != this.excelType) {
@@ -616,12 +630,12 @@ public abstract class AbstractExcelWriter<T> {
      * @param b blue
      * @return 一个新的自定义颜色
      * @throws WriteExcelException 异常
-     * @see #createXSSFCellStyle()
-     * @see #createXSSFColor(int, int, int, int)
+     * @see #createXLSXCellStyle()
+     * @see #createXLSXColor(int, int, int, int)
      * @see #getXLSPalette()
      */
-    public XSSFColor createXSSFColor(int r, int g, int b) throws WriteExcelException {
-        return this.createXSSFColor(r, g, b, 255);
+    public XSSFColor createXLSXColor(int r, int g, int b) throws WriteExcelException {
+        return this.createXLSXColor(r, g, b, 255);
     }
 
     /**
@@ -635,11 +649,11 @@ public abstract class AbstractExcelWriter<T> {
      * @param a alpha
      * @return 一个新的自定义颜色
      * @throws WriteExcelException 异常
-     * @see #createXSSFCellStyle()
-     * @see #createXSSFColor(int, int, int)
+     * @see #createXLSXCellStyle()
+     * @see #createXLSXColor(int, int, int)
      * @see #getXLSPalette()
      */
-    public XSSFColor createXSSFColor(int r, int g, int b, int a) throws WriteExcelException {
+    public XSSFColor createXLSXColor(int r, int g, int b, int a) throws WriteExcelException {
         if (XLSX != this.excelType) {
             throw new WriteExcelException("此颜色仅适用于XLSX类型Excel文件使用");
         }
