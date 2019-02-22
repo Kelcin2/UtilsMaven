@@ -1,9 +1,6 @@
 package com.github.flyinghe.domain;
 
-import org.hibernate.type.DoubleType;
-
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
 
 /**
  * Created by FlyingHe on 2018/12/20.
@@ -21,6 +18,10 @@ public class TestObj {
     private Float floatType;
     private Double doubleType;
     private Object nullType;
+    private List<User> listType;
+    private User[] arrayType;
+    private Map<String, Object> mapType;
+    private User userType;
 
     public String getStringType() {
         return stringType;
@@ -116,5 +117,40 @@ public class TestObj {
 
     public void setNullType(Object nullType) {
         this.nullType = nullType;
+    }
+
+    public List<User> getListType() {
+        if (null == this.listType) {
+            this.listType = new ArrayList<>(16);
+        }
+        return listType;
+    }
+
+    public void setListType(List<User> listType) {
+        this.listType = listType;
+    }
+
+    public User[] getArrayType() {
+        return arrayType;
+    }
+
+    public void setArrayType(User[] arrayType) {
+        this.arrayType = arrayType;
+    }
+
+    public Map<String, Object> getMapType() {
+        return mapType;
+    }
+
+    public void setMapType(Map<String, Object> mapType) {
+        this.mapType = mapType;
+    }
+
+    public User getUserType() {
+        return userType;
+    }
+
+    public void setUserType(User userType) {
+        this.userType = userType;
     }
 }

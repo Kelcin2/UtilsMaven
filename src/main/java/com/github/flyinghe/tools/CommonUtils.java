@@ -323,4 +323,116 @@ public class CommonUtils {
             CommonUtils.closeIOStream(ois, null);
         }
     }
+
+    /**
+     * 将一个日期的时,分,秒,毫秒置零
+     *
+     * @param calendar 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedDay000(Date)
+     */
+    public static Date dateRevervedDay000(Calendar calendar) {
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTime();
+    }
+
+    /**
+     * 将一个日期的时,分,秒,毫秒置零
+     *
+     * @param date 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedDay000(Calendar)
+     */
+    public static Date dateRevervedDay000(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return dateRevervedDay000(calendar);
+    }
+
+    /**
+     * 将一个日期的时,分,秒,毫秒调整为最大值
+     *
+     * @param calendar 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedDay999(Date)
+     */
+    public static Date dateRevervedDay999(Calendar calendar) {
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTime();
+    }
+
+    /**
+     * 将一个日期的时,分,秒,毫秒调整为最大值
+     *
+     * @param date 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedDay999(Calendar)
+     */
+    public static Date dateRevervedDay999(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return dateRevervedDay999(calendar);
+    }
+
+    /**
+     * 将一个日期的月,日,时,分,秒,毫秒调整为最小值
+     *
+     * @param calendar 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedYear000(Date)
+     */
+    public static Date dateRevervedYear000(Calendar calendar) {
+        calendar.set(Calendar.MONTH, Calendar.JANUARY);
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+
+        return dateRevervedDay000(calendar);
+    }
+
+    /**
+     * 将一个日期的月,日,时,分,秒,毫秒调整为最小值
+     *
+     * @param date 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedYear000(Calendar)
+     */
+    public static Date dateRevervedYear000(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        return dateRevervedYear000(calendar);
+    }
+
+    /**
+     * 将一个日期的月,日,时,分,秒,毫秒调整为最大值
+     *
+     * @param calendar 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedYear999(Date)
+     */
+    public static Date dateRevervedYear999(Calendar calendar) {
+        calendar.set(Calendar.MONTH, Calendar.DECEMBER);
+        calendar.set(Calendar.DAY_OF_MONTH, 31);
+
+        return dateRevervedDay999(calendar);
+    }
+
+    /**
+     * 将一个日期的月,日,时,分,秒,毫秒调整为最大值
+     *
+     * @param date 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedYear999(Calendar)
+     */
+    public static Date dateRevervedYear999(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        return dateRevervedYear999(calendar);
+    }
 }
