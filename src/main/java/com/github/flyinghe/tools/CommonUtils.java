@@ -381,6 +381,130 @@ public class CommonUtils {
     }
 
     /**
+     * 将一个日期的日,时,分,秒,毫秒调整为最小值
+     *
+     * @param calendar 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedMonth000(Date)
+     */
+    public static Date dateRevervedMonth000(Calendar calendar) {
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+
+        return dateRevervedDay000(calendar);
+    }
+
+    /**
+     * 将一个日期的日,时,分,秒,毫秒调整为最小值
+     *
+     * @param date 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedMonth000(Calendar)
+     */
+    public static Date dateRevervedMonth000(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        return dateRevervedMonth000(calendar);
+    }
+
+    /**
+     * 将一个日期的日,时,分,秒,毫秒调整为最大值
+     *
+     * @param calendar 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedMonth999(Date)
+     */
+    public static Date dateRevervedMonth999(Calendar calendar) {
+        calendar.set(Calendar.DAY_OF_MONTH, 1);
+        calendar.add(Calendar.MONTH, 1);
+        calendar.add(Calendar.DAY_OF_MONTH, -1);
+        return dateRevervedDay999(calendar);
+    }
+
+    /**
+     * 将一个日期的日,时,分,秒,毫秒调整为最大值
+     *
+     * @param date 一个日期
+     * @return 被转化后的日期
+     * @see #dateRevervedMonth999(Calendar)
+     */
+    public static Date dateRevervedMonth999(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        return dateRevervedMonth999(calendar);
+    }
+
+    /**
+     * 将指定年月的日期的日,时,分,秒,毫秒调整为最小值或者最大值
+     *
+     * @param year  指定年份
+     * @param month 指定月份
+     * @param is000 为true表示置为最小值,反之最大值
+     * @return 被转化后的日期
+     * @see #dateRevervedMonth000(Date)
+     * @see #dateRevervedMonth000(Calendar)
+     * @see #dateRevervedMonth999(Date)
+     * @see #dateRevervedMonth999(Calendar)
+     */
+    public static Date dateRevervedMonth(int year, int month, boolean is000) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        if (month <= 1) {
+            calendar.set(Calendar.MONTH, Calendar.JANUARY);
+        } else if (month >= 12) {
+            calendar.set(Calendar.MONTH, Calendar.DECEMBER);
+        } else {
+            calendar.set(Calendar.MONTH, month - 1);
+        }
+        return is000 ? dateRevervedMonth000(calendar) : dateRevervedMonth999(calendar);
+    }
+
+    /**
+     * 获取指定年,季度的最初时刻
+     *
+     * @param year    年份
+     * @param quarter 季度
+     * @return 指定年, 季度的最初时刻日期对象
+     */
+    public static Date dateRevervedQuarter000(int year, int quarter) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        if (quarter <= 1) {
+            calendar.set(Calendar.MONTH, Calendar.JANUARY);
+        } else if (quarter == 2) {
+            calendar.set(Calendar.MONTH, Calendar.APRIL);
+        } else if (quarter == 3) {
+            calendar.set(Calendar.MONTH, Calendar.JULY);
+        } else {
+            calendar.set(Calendar.MONTH, Calendar.OCTOBER);
+        }
+        return dateRevervedMonth000(calendar);
+    }
+
+    /**
+     * 获取指定年,季度的最末时刻
+     *
+     * @param year    年份
+     * @param quarter 季度
+     * @return 指定年, 季度的最末时刻日期对象
+     */
+    public static Date dateRevervedQuarter999(int year, int quarter) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        if (quarter <= 1) {
+            calendar.set(Calendar.MONTH, Calendar.MARCH);
+        } else if (quarter == 2) {
+            calendar.set(Calendar.MONTH, Calendar.JUNE);
+        } else if (quarter == 3) {
+            calendar.set(Calendar.MONTH, Calendar.SEPTEMBER);
+        } else {
+            calendar.set(Calendar.MONTH, Calendar.DECEMBER);
+        }
+        return dateRevervedMonth999(calendar);
+    }
+
+    /**
      * 将一个日期的月,日,时,分,秒,毫秒调整为最小值
      *
      * @param calendar 一个日期
@@ -434,5 +558,23 @@ public class CommonUtils {
         calendar.setTime(date);
 
         return dateRevervedYear999(calendar);
+    }
+
+    /**
+     * 将某一年对应的日期的月,日,时,分,秒,毫秒调整为最大值或者最小值
+     *
+     * @param year  年份
+     * @param is000 true则调整为最小值,反之最大值
+     * @return 被转化后的日期
+     * @see #dateRevervedYear000(Date)
+     * @see #dateRevervedYear000(Calendar)
+     * @see #dateRevervedYear999(Date)
+     * @see #dateRevervedYear999(Calendar)
+     */
+    public static Date dateRevervedYear(int year, boolean is000) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+
+        return is000 ? dateRevervedYear000(calendar) : dateRevervedYear999(calendar);
     }
 }
