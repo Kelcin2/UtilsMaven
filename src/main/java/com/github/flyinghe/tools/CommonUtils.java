@@ -329,9 +329,9 @@ public class CommonUtils {
      *
      * @param calendar 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedDay000(Date)
+     * @see #dateReservedDay000(Date)
      */
-    public static Date dateRevervedDay000(Calendar calendar) {
+    public static Date dateReservedDay000(Calendar calendar) {
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
@@ -344,12 +344,12 @@ public class CommonUtils {
      *
      * @param date 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedDay000(Calendar)
+     * @see #dateReservedDay000(Calendar)
      */
-    public static Date dateRevervedDay000(Date date) {
+    public static Date dateReservedDay000(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
-        return dateRevervedDay000(calendar);
+        return dateReservedDay000(calendar);
     }
 
     /**
@@ -357,9 +357,9 @@ public class CommonUtils {
      *
      * @param calendar 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedDay999(Date)
+     * @see #dateReservedDay999(Date)
      */
-    public static Date dateRevervedDay999(Calendar calendar) {
+    public static Date dateReservedDay999(Calendar calendar) {
         calendar.set(Calendar.HOUR_OF_DAY, 23);
         calendar.set(Calendar.MINUTE, 59);
         calendar.set(Calendar.SECOND, 59);
@@ -372,12 +372,12 @@ public class CommonUtils {
      *
      * @param date 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedDay999(Calendar)
+     * @see #dateReservedDay999(Calendar)
      */
-    public static Date dateRevervedDay999(Date date) {
+    public static Date dateReservedDay999(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
-        return dateRevervedDay999(calendar);
+        return dateReservedDay999(calendar);
     }
 
     /**
@@ -385,12 +385,12 @@ public class CommonUtils {
      *
      * @param calendar 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedMonth000(Date)
+     * @see #dateReservedMonth000(Date)
      */
-    public static Date dateRevervedMonth000(Calendar calendar) {
+    public static Date dateReservedMonth000(Calendar calendar) {
         calendar.set(Calendar.DAY_OF_MONTH, 1);
 
-        return dateRevervedDay000(calendar);
+        return dateReservedDay000(calendar);
     }
 
     /**
@@ -398,13 +398,13 @@ public class CommonUtils {
      *
      * @param date 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedMonth000(Calendar)
+     * @see #dateReservedMonth000(Calendar)
      */
-    public static Date dateRevervedMonth000(Date date) {
+    public static Date dateReservedMonth000(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
 
-        return dateRevervedMonth000(calendar);
+        return dateReservedMonth000(calendar);
     }
 
     /**
@@ -412,13 +412,13 @@ public class CommonUtils {
      *
      * @param calendar 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedMonth999(Date)
+     * @see #dateReservedMonth999(Date)
      */
-    public static Date dateRevervedMonth999(Calendar calendar) {
+    public static Date dateReservedMonth999(Calendar calendar) {
         calendar.set(Calendar.DAY_OF_MONTH, 1);
         calendar.add(Calendar.MONTH, 1);
         calendar.add(Calendar.DAY_OF_MONTH, -1);
-        return dateRevervedDay999(calendar);
+        return dateReservedDay999(calendar);
     }
 
     /**
@@ -426,13 +426,13 @@ public class CommonUtils {
      *
      * @param date 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedMonth999(Calendar)
+     * @see #dateReservedMonth999(Calendar)
      */
-    public static Date dateRevervedMonth999(Date date) {
+    public static Date dateReservedMonth999(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
 
-        return dateRevervedMonth999(calendar);
+        return dateReservedMonth999(calendar);
     }
 
     /**
@@ -442,12 +442,12 @@ public class CommonUtils {
      * @param month 指定月份
      * @param is000 为true表示置为最小值,反之最大值
      * @return 被转化后的日期
-     * @see #dateRevervedMonth000(Date)
-     * @see #dateRevervedMonth000(Calendar)
-     * @see #dateRevervedMonth999(Date)
-     * @see #dateRevervedMonth999(Calendar)
+     * @see #dateReservedMonth000(Date)
+     * @see #dateReservedMonth000(Calendar)
+     * @see #dateReservedMonth999(Date)
+     * @see #dateReservedMonth999(Calendar)
      */
-    public static Date dateRevervedMonth(int year, int month, boolean is000) {
+    public static Date dateReservedMonth(int year, int month, boolean is000) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         if (month <= 1) {
@@ -457,7 +457,7 @@ public class CommonUtils {
         } else {
             calendar.set(Calendar.MONTH, month - 1);
         }
-        return is000 ? dateRevervedMonth000(calendar) : dateRevervedMonth999(calendar);
+        return is000 ? dateReservedMonth000(calendar) : dateReservedMonth999(calendar);
     }
 
     /**
@@ -467,7 +467,7 @@ public class CommonUtils {
      * @param quarter 季度
      * @return 指定年, 季度的最初时刻日期对象
      */
-    public static Date dateRevervedQuarter000(int year, int quarter) {
+    public static Date dateReservedQuarter000(int year, int quarter) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         if (quarter <= 1) {
@@ -479,7 +479,7 @@ public class CommonUtils {
         } else {
             calendar.set(Calendar.MONTH, Calendar.OCTOBER);
         }
-        return dateRevervedMonth000(calendar);
+        return dateReservedMonth000(calendar);
     }
 
     /**
@@ -489,7 +489,7 @@ public class CommonUtils {
      * @param quarter 季度
      * @return 指定年, 季度的最末时刻日期对象
      */
-    public static Date dateRevervedQuarter999(int year, int quarter) {
+    public static Date dateReservedQuarter999(int year, int quarter) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         if (quarter <= 1) {
@@ -501,7 +501,7 @@ public class CommonUtils {
         } else {
             calendar.set(Calendar.MONTH, Calendar.DECEMBER);
         }
-        return dateRevervedMonth999(calendar);
+        return dateReservedMonth999(calendar);
     }
 
     /**
@@ -509,13 +509,13 @@ public class CommonUtils {
      *
      * @param calendar 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedYear000(Date)
+     * @see #dateReservedYear000(Date)
      */
-    public static Date dateRevervedYear000(Calendar calendar) {
+    public static Date dateReservedYear000(Calendar calendar) {
         calendar.set(Calendar.MONTH, Calendar.JANUARY);
         calendar.set(Calendar.DAY_OF_MONTH, 1);
 
-        return dateRevervedDay000(calendar);
+        return dateReservedDay000(calendar);
     }
 
     /**
@@ -523,13 +523,13 @@ public class CommonUtils {
      *
      * @param date 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedYear000(Calendar)
+     * @see #dateReservedYear000(Calendar)
      */
-    public static Date dateRevervedYear000(Date date) {
+    public static Date dateReservedYear000(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
 
-        return dateRevervedYear000(calendar);
+        return dateReservedYear000(calendar);
     }
 
     /**
@@ -537,13 +537,13 @@ public class CommonUtils {
      *
      * @param calendar 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedYear999(Date)
+     * @see #dateReservedYear999(Date)
      */
-    public static Date dateRevervedYear999(Calendar calendar) {
+    public static Date dateReservedYear999(Calendar calendar) {
         calendar.set(Calendar.MONTH, Calendar.DECEMBER);
         calendar.set(Calendar.DAY_OF_MONTH, 31);
 
-        return dateRevervedDay999(calendar);
+        return dateReservedDay999(calendar);
     }
 
     /**
@@ -551,13 +551,13 @@ public class CommonUtils {
      *
      * @param date 一个日期
      * @return 被转化后的日期
-     * @see #dateRevervedYear999(Calendar)
+     * @see #dateReservedYear999(Calendar)
      */
-    public static Date dateRevervedYear999(Date date) {
+    public static Date dateReservedYear999(Date date) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
 
-        return dateRevervedYear999(calendar);
+        return dateReservedYear999(calendar);
     }
 
     /**
@@ -566,15 +566,15 @@ public class CommonUtils {
      * @param year  年份
      * @param is000 true则调整为最小值,反之最大值
      * @return 被转化后的日期
-     * @see #dateRevervedYear000(Date)
-     * @see #dateRevervedYear000(Calendar)
-     * @see #dateRevervedYear999(Date)
-     * @see #dateRevervedYear999(Calendar)
+     * @see #dateReservedYear000(Date)
+     * @see #dateReservedYear000(Calendar)
+     * @see #dateReservedYear999(Date)
+     * @see #dateReservedYear999(Calendar)
      */
-    public static Date dateRevervedYear(int year, boolean is000) {
+    public static Date dateReservedYear(int year, boolean is000) {
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
 
-        return is000 ? dateRevervedYear000(calendar) : dateRevervedYear999(calendar);
+        return is000 ? dateReservedYear000(calendar) : dateReservedYear999(calendar);
     }
 }
