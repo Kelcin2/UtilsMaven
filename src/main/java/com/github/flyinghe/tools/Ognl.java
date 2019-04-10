@@ -1,4 +1,4 @@
-package com.flying.dao.utils;
+package com.github.flyinghe.tools;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
