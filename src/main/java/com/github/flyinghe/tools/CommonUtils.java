@@ -2,13 +2,18 @@ package com.github.flyinghe.tools;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.ReflectionUtils;
 
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.*;
 
 /**
@@ -60,6 +65,108 @@ public class CommonUtils {
             throw new RuntimeException(e);
         }
         return map;
+    }
+
+    /**
+     * 将一个Map转化成一个Bean
+     *
+     * @param obj   Map对象
+     * @param clazz 被转换成的Bean的Class对象
+     * @param <T>
+     * @return 被转化成的Bean
+     * @throws Exception
+     */
+    public static <T> T mapToBean(Object obj, Class<T> clazz) throws Exception {
+        if (obj == null) {
+            return null;
+        }
+        if (!(obj instanceof Map)) {
+            throw new Exception("obj必须为java.util.Map类型");
+        }
+        T bean = null;
+        bean = clazz.newInstance();
+        Set<String> properties = PropertyUtils.describe(bean).keySet();
+        properties.remove("class");
+        Map<String, Object> map = (Map<String, Object>) obj;
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            try {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (!properties.contains(key) || null == value) {
+                    continue;
+                }
+
+                if (ReflectionUtils.findField(clazz, key).getGenericType() instanceof TypeVariable) {
+                    //若该属性是一个泛型类型,则直接赋值
+                    PropertyUtils.setSimpleProperty(bean, key, value);
+                } else if (value instanceof Map) {
+                    PropertyUtils.setSimpleProperty(bean, key,
+                            mapToBean(value, ReflectionUtils.findField(clazz, key).getType()));
+                } else if (value instanceof List) {
+                    Class<?> propertyClazz = ReflectionUtils.findField(clazz, key).getType();
+                    if (!propertyClazz.getName().equalsIgnoreCase("java.util.List")) {
+                        continue;
+                    }
+                    List<?> values = (List<?>) value;
+                    if (CollectionUtils.isEmpty(values)) {
+                        continue;
+                    }
+                    Object valueNested = values.get(0);
+                    //判断这个集合元素的类型
+                    Type actualTypeArgument =
+                            ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType())
+                                    .getActualTypeArguments()[0];
+                    List propertyValue = new ArrayList<>();
+                    if (actualTypeArgument instanceof TypeVariable) {
+                        //若该List的泛型未指定具体类型,则直接赋值
+                        propertyValue.addAll(values);
+                        PropertyUtils.setSimpleProperty(bean, key, propertyValue);
+                    } else if (valueNested instanceof Map) {
+                        Class propertyNestedClazz = (Class) actualTypeArgument;
+                        for (int i = 0; i < values.size(); i++) {
+                            propertyValue.add(mapToBean(values.get(i), propertyNestedClazz));
+                        }
+                        PropertyUtils.setSimpleProperty(bean, key, propertyValue);
+                    } else {
+                        PropertyUtils.setSimpleProperty(bean, key, values);
+                    }
+                } else {
+                    BeanUtils.setProperty(bean, key, value);
+                }
+            } catch (Exception e) {
+                // do nothing
+            }
+        }
+        return bean;
+    }
+
+    /**
+     * 将一个List转化成包含具体Bean的List并返回
+     *
+     * @param obj   List对象
+     * @param clazz 最终返回List的元素Class对象
+     * @param <T>
+     * @return
+     * @throws Exception
+     */
+    public static <T> List<T> listToBean(Object obj, Class<T> clazz) throws Exception {
+        if (obj == null) {
+            return null;
+        }
+        if (!(obj instanceof List)) {
+            throw new Exception("obj必须为java.util.List类型");
+        }
+        List<T> result = new ArrayList<>();
+        List<Map<String, Object>> objList = (List<Map<String, Object>>) obj;
+        if (CollectionUtils.isNotEmpty(objList)) {
+            for (Map<String, Object> map : objList) {
+                T bean = mapToBean(map, clazz);
+                if (null != bean) {
+                    result.add(bean);
+                }
+            }
+        }
+        return result;
     }
 
     /**
