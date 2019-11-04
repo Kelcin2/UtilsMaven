@@ -3,6 +3,7 @@ package com.github.flyinghe.tools;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.github.flyinghe.depdcy.FlyingFilePart;
+import com.github.flyinghe.depdcy.KeyValuePair;
 import com.github.flyinghe.depdcy.NameFilePair;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -11,9 +12,7 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
-import org.apache.commons.httpclient.methods.multipart.Part;
-import org.apache.commons.httpclient.methods.multipart.StringPart;
+import org.apache.commons.httpclient.methods.multipart.*;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,6 +34,9 @@ public class HttpUtils {
         httpClient = new HttpClient();
         objectMapper = new ObjectMapper();
         typeFactory = objectMapper.getTypeFactory();
+    }
+
+    public static void main(String[] args) {
     }
 
     /**
@@ -306,6 +308,29 @@ public class HttpUtils {
     }
 
     /**
+     * 执行一个Post请求，并返回字符串数据(一般用于返回数据为Json)
+     *
+     * @param url       请求url
+     * @param fileParam 文件请求参数
+     * @return 返回字符串数据(一般为Json)
+     * @throws Exception
+     */
+    public static <RES> RES execPostFileByte(String url, Map<String, byte[]> fileParam, Class<RES> clazz)
+            throws Exception {
+        RES result = null;
+        List<ByteArrayPartSource> byteArrayPartSources = new ArrayList<>();
+        if (MapUtils.isNotEmpty(fileParam)) {
+            fileParam.forEach((k, v) -> byteArrayPartSources.add(new ByteArrayPartSource(k, v)));
+        }
+        //todo
+        String responseBody = execPostFile(url, null, null, null);
+        if (StringUtils.isNotBlank(responseBody)) {
+            result = objectMapper.readValue(responseBody, clazz);
+        }
+        return result;
+    }
+
+    /**
      * 执行一个Post请求，并返回字符串数据
      *
      * @param url            请求url
@@ -315,8 +340,9 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static String execPostFile(String url, List<NameValuePair> queryParams, List<NameValuePair> formdataParams,
-                                      List<NameFilePair> fileParams)
+    public static <T extends KeyValuePair> String execPostFile(String url, List<NameValuePair> queryParams,
+                                                               List<NameValuePair> formdataParams,
+                                                               List<T> fileParams)
             throws Exception {
         String result = null;
         PostMethod postMethod = new PostMethod(url);
@@ -329,8 +355,16 @@ public class HttpUtils {
                 formdataParams.forEach(v -> parts.add(new StringPart(v.getName(), v.getValue(), "UTF-8")));
             }
             if (CollectionUtils.isNotEmpty(fileParams)) {
-                for (NameFilePair nameFilePair : fileParams) {
-                    parts.add(new FlyingFilePart(nameFilePair.getName(), nameFilePair.getFile()));
+                for (KeyValuePair nameFilePair : fileParams) {
+                    FlyingFilePart part = null;
+                    if (nameFilePair.getValue() instanceof File) {
+                        part = new FlyingFilePart(nameFilePair.getKey(), (File) nameFilePair.getValue());
+                    } else if (nameFilePair.getValue() instanceof PartSource) {
+                        part = new FlyingFilePart(nameFilePair.getKey(), (PartSource) nameFilePair.getValue());
+                    }
+                    if (null != part) {
+                        parts.add(part);
+                    }
                 }
             }
             if (CollectionUtils.isNotEmpty(parts)) {
