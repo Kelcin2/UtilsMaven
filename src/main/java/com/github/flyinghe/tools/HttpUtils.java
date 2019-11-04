@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.github.flyinghe.depdcy.FlyingFilePart;
 import com.github.flyinghe.depdcy.KeyValuePair;
 import com.github.flyinghe.depdcy.NameFilePair;
+import com.github.flyinghe.depdcy.NamePartSourcePair;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.httpclient.HttpClient;
@@ -12,7 +13,10 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.methods.multipart.*;
+import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
+import org.apache.commons.httpclient.methods.multipart.Part;
+import org.apache.commons.httpclient.methods.multipart.PartSource;
+import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.lang3.StringUtils;
 
@@ -34,9 +38,6 @@ public class HttpUtils {
         httpClient = new HttpClient();
         objectMapper = new ObjectMapper();
         typeFactory = objectMapper.getTypeFactory();
-    }
-
-    public static void main(String[] args) {
     }
 
     /**
@@ -315,15 +316,14 @@ public class HttpUtils {
      * @return 返回字符串数据(一般为Json)
      * @throws Exception
      */
-    public static <RES> RES execPostFileByte(String url, Map<String, byte[]> fileParam, Class<RES> clazz)
+    public static <RES> RES execPostFilePS(String url, Map<String, PartSource> fileParam, Class<RES> clazz)
             throws Exception {
         RES result = null;
-        List<ByteArrayPartSource> byteArrayPartSources = new ArrayList<>();
+        List<NamePartSourcePair> namePartSourcePairs = new ArrayList<>();
         if (MapUtils.isNotEmpty(fileParam)) {
-            fileParam.forEach((k, v) -> byteArrayPartSources.add(new ByteArrayPartSource(k, v)));
+            fileParam.forEach((k, v) -> namePartSourcePairs.add(new NamePartSourcePair(k, v)));
         }
-        //todo
-        String responseBody = execPostFile(url, null, null, null);
+        String responseBody = execPostFile(url, null, null, namePartSourcePairs);
         if (StringUtils.isNotBlank(responseBody)) {
             result = objectMapper.readValue(responseBody, clazz);
         }
