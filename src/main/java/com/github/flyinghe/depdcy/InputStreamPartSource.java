@@ -2,6 +2,7 @@ package com.github.flyinghe.depdcy;
 
 import org.apache.commons.httpclient.methods.multipart.PartSource;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -22,21 +23,24 @@ public class InputStreamPartSource implements PartSource {
         this.fileName = fileName;
         this.is = is;
         try {
-            this.fileLength = fileLength != null ? this.fileLength : this.is.available();
+            this.fileLength = fileLength != null ? fileLength : null != is ? this.is.available() : 0L;
         } catch (IOException e) {
             this.fileLength = 0L;
         }
     }
 
-    @Override public long getLength() {
+    @Override
+    public long getLength() {
         return this.fileLength;
     }
 
-    @Override public String getFileName() {
-        return this.fileName;
+    @Override
+    public String getFileName() {
+        return this.fileName != null ? this.fileName : "noname";
     }
 
-    @Override public InputStream createInputStream() throws IOException {
-        return this.is;
+    @Override
+    public InputStream createInputStream() throws IOException {
+        return null != this.is ? this.is : new ByteArrayInputStream(new byte[]{});
     }
 }
