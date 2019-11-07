@@ -8,6 +8,7 @@ import com.github.flyinghe.depdcy.NameFilePair;
 import com.github.flyinghe.depdcy.NamePartSourcePair;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -21,6 +22,7 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +32,9 @@ import java.util.Map;
  * Created by FlyingHe on 2019/11/2.
  */
 public class HttpUtils {
+    public static final String CONTENT_TYPE_JSON = "application/json";
+    public static final String CONTENT_TYPE_XML = "application/xml";
+
     private static HttpClient httpClient;
     private static ObjectMapper objectMapper;
     private static TypeFactory typeFactory;
@@ -38,6 +43,24 @@ public class HttpUtils {
         httpClient = new HttpClient();
         objectMapper = new ObjectMapper();
         typeFactory = objectMapper.getTypeFactory();
+    }
+
+    public static Header getAuthHeader(String username, String pwd) {
+        if (null == username) {
+            username = "";
+        }
+        if (null == pwd) {
+            pwd = "";
+        }
+        return new Header("Authorization",
+                String.format("Basic %s", CommonUtils.bytesToBase64Str(String.format("%s:%s", username, pwd).getBytes(
+                        StandardCharsets.UTF_8))));
+    }
+
+    public static List<Header> getAuthHeaderList(String username, String pwd) {
+        return new ArrayList<Header>() {{
+            add(getAuthHeader(username, pwd));
+        }};
     }
 
     /**
@@ -134,11 +157,28 @@ public class HttpUtils {
      * @throws Exception
      */
     public static String execGet(String url, List<NameValuePair> queryParams) throws Exception {
+        return execGet(url, null, queryParams);
+    }
+
+    /**
+     * 执行一个Get请求，并返回字符串数据
+     *
+     * @param url            请求url
+     * @param requestHeaders 请求头列表
+     * @param queryParams    Get请求参数
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public static String execGet(String url, List<Header> requestHeaders, List<NameValuePair> queryParams)
+            throws Exception {
         String result = null;
         GetMethod getMethod =
                 new GetMethod(url);
         if (CollectionUtils.isNotEmpty(queryParams)) {
             getMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
+        }
+        if (CollectionUtils.isNotEmpty(requestHeaders)) {
+            requestHeaders.forEach(getMethod::setRequestHeader);
         }
         try {
             httpClient.executeMethod(getMethod);
@@ -260,16 +300,40 @@ public class HttpUtils {
      */
     public static String execPost(String url, List<NameValuePair> queryParams, Object paramBody)
             throws Exception {
+        return execPost(url, null, CONTENT_TYPE_JSON, queryParams,
+                paramBody != null ? objectMapper.writeValueAsString(paramBody) : "");
+    }
+
+    /**
+     * @param url            请求url
+     * @param requestHeaders 请求头列表
+     * @param contentType    contentType
+     * @param queryParams    queryParameter请求参数
+     * @param paramBody      Post请求体
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public static String execPost(String url, List<Header> requestHeaders, String contentType,
+                                  List<NameValuePair> queryParams,
+                                  String paramBody)
+            throws Exception {
+        if (StringUtils.isBlank(contentType)) {
+            contentType = CONTENT_TYPE_JSON;
+        }
+        if (null == paramBody) {
+            paramBody = "";
+        }
+
         String result = null;
         PostMethod postMethod = new PostMethod(url);
         if (CollectionUtils.isNotEmpty(queryParams)) {
             postMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
+        if (CollectionUtils.isNotEmpty(requestHeaders)) {
+            requestHeaders.forEach(postMethod::setRequestHeader);
+        }
         try {
-            StringRequestEntity stringRequestEntity =
-                    new StringRequestEntity(
-                            paramBody != null ? objectMapper.writeValueAsString(paramBody) : "",
-                            "application/json", "UTF-8");
+            StringRequestEntity stringRequestEntity = new StringRequestEntity(paramBody, contentType, "UTF-8");
             postMethod.setRequestEntity(stringRequestEntity);
             httpClient.executeMethod(postMethod);
             if (200 != postMethod.getStatusCode()) {
@@ -301,7 +365,7 @@ public class HttpUtils {
         if (MapUtils.isNotEmpty(fileParam)) {
             fileParam.forEach((k, v) -> filePairs.add(new NameFilePair(k, v)));
         }
-        String responseBody = execPostFile(url, null, null, filePairs);
+        String responseBody = execPostFile(url, null, null, null, filePairs);
         if (StringUtils.isNotBlank(responseBody)) {
             result = objectMapper.readValue(responseBody, clazz);
         }
@@ -323,7 +387,7 @@ public class HttpUtils {
         if (MapUtils.isNotEmpty(fileParam)) {
             fileParam.forEach((k, v) -> namePartSourcePairs.add(new NamePartSourcePair(k, v)));
         }
-        String responseBody = execPostFile(url, null, null, namePartSourcePairs);
+        String responseBody = execPostFile(url, null, null, null, namePartSourcePairs);
         if (StringUtils.isNotBlank(responseBody)) {
             result = objectMapper.readValue(responseBody, clazz);
         }
@@ -334,13 +398,15 @@ public class HttpUtils {
      * 执行一个Post请求，并返回字符串数据
      *
      * @param url            请求url
+     * @param requestHeaders 请求头
      * @param queryParams    queryParameter请求参数
      * @param formdataParams form-data请求参数
      * @param fileParams     文件请求参数
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static <T extends KeyValuePair> String execPostFile(String url, List<NameValuePair> queryParams,
+    public static <T extends KeyValuePair> String execPostFile(String url, List<Header> requestHeaders,
+                                                               List<NameValuePair> queryParams,
                                                                List<NameValuePair> formdataParams,
                                                                List<T> fileParams)
             throws Exception {
@@ -348,6 +414,9 @@ public class HttpUtils {
         PostMethod postMethod = new PostMethod(url);
         if (CollectionUtils.isNotEmpty(queryParams)) {
             postMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
+        }
+        if (CollectionUtils.isNotEmpty(requestHeaders)) {
+            requestHeaders.forEach(postMethod::setRequestHeader);
         }
         try {
             List<Part> parts = new ArrayList<>();

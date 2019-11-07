@@ -1,5 +1,6 @@
 package com.github.flyinghe.tools;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -99,5 +100,97 @@ public class XMLUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * 将Map数据转化成XML并返回(不带根节点)
+     *
+     * @param datas Map数据
+     * @return 转化成的XML
+     * @throws Exception
+     */
+    public static String mapToXMLString(Map<String, Object> datas) throws Exception {
+        Document document = mapToXML(null, datas);
+        Element root = document.getRootElement();
+        StringBuilder sb = new StringBuilder();
+        Iterator iterator = root.elementIterator();
+        while (iterator.hasNext()) {
+            Element nextEle = (Element) iterator.next();
+            sb.append(nextEle.asXML());
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 将Map数据转化成XML并返回(带根节点)
+     *
+     * @param rootStr 根节点,若为空或者不合法则默认为root
+     * @param datas   Map数据
+     * @return 转化成的XML
+     * @throws Exception
+     */
+    public static String mapToXMLString(String rootStr, Map<String, Object> datas) throws Exception {
+        Document document = mapToXML(rootStr, datas);
+        return document.getRootElement().asXML();
+    }
+
+    /**
+     * 把Map数据追加到XML根节点rootStr中
+     *
+     * @param rootStr 根节点,若为空或者不合法则默认为root
+     * @param datas   需要追加的数据
+     * @return 生成的XML文档
+     * @throws Exception
+     */
+    public static Document mapToXML(String rootStr, Map<String, Object> datas) throws Exception {
+        rootStr = StringUtils.isNotBlank(rootStr) ? rootStr.trim() : "<root></root>";
+        Object obj = null;
+        Reader reader = new StringReader(rootStr);
+        Document document = null;
+        try {
+            document = saxReader.read(reader);
+        } catch (DocumentException de) {
+            reader.close();
+            reader = new StringReader("<root></root>");
+            document = saxReader.read(reader);
+        }
+        document.setXMLEncoding("UTF-8");
+        Element root = document.getRootElement();
+        mapToElement(root, datas);
+        reader.close();
+        return document;
+    }
+
+    /**
+     * 把Map数据追加到XML节点element中
+     *
+     * @param element 被追加的节点
+     * @param datas   需要追加的数据
+     */
+    public static void mapToElement(Element element, Map<String, Object> datas) {
+        if (element == null || MapUtils.isEmpty(datas)) {
+            return;
+        }
+        for (Map.Entry<String, Object> entry : datas.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (Ognl.isEmpty(value)) {
+                element.addElement(key);
+            } else if (value instanceof Map) {
+                mapToElement(element.addElement(key), (Map<String, Object>) value);
+            } else if (value instanceof List) {
+                for (Object listObj : (List) value) {
+                    if (Ognl.isEmpty(listObj)) {
+                        element.addElement(key);
+                    } else if (listObj instanceof Map) {
+                        mapToElement(element.addElement(key), (Map<String, Object>) listObj);
+                    } else {
+                        element.addElement(key).addText(listObj.toString());
+                    }
+                }
+            } else {
+                element.addElement(key).addText(value.toString());
+            }
+        }
     }
 }

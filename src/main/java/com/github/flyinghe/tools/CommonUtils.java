@@ -1,5 +1,6 @@
 package com.github.flyinghe.tools;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -65,6 +66,22 @@ public class CommonUtils {
             throw new RuntimeException(e);
         }
         return map;
+    }
+
+    /**
+     * 将一个Bean转化成一个Map(所有属性均为Map或者List)
+     *
+     * @param bean 待转化的Bean
+     * @return 返回转化成的Map
+     * @throws Exception
+     */
+    public static Map<String, Object> beanToMap(Object bean) throws Exception {
+        if (Ognl.isEmpty(bean)) {
+            return new HashMap<>();
+        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(objectMapper.writeValueAsString(bean),
+                objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, Object.class));
     }
 
     /**
