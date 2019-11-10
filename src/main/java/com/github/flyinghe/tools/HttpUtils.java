@@ -424,12 +424,12 @@ public class HttpUtils {
                 formdataParams.forEach(v -> parts.add(new StringPart(v.getName(), v.getValue(), "UTF-8")));
             }
             if (CollectionUtils.isNotEmpty(fileParams)) {
-                for (KeyValuePair nameFilePair : fileParams) {
+                for (KeyValuePair keyValuePair : fileParams) {
                     FlyingFilePart part = null;
-                    if (nameFilePair.getValue() instanceof File) {
-                        part = new FlyingFilePart(nameFilePair.getKey(), (File) nameFilePair.getValue());
-                    } else if (nameFilePair.getValue() instanceof PartSource) {
-                        part = new FlyingFilePart(nameFilePair.getKey(), (PartSource) nameFilePair.getValue());
+                    if (keyValuePair.getValue() instanceof File) {
+                        part = new FlyingFilePart(keyValuePair.getKey(), (File) keyValuePair.getValue());
+                    } else if (keyValuePair.getValue() instanceof PartSource) {
+                        part = new FlyingFilePart(keyValuePair.getKey(), (PartSource) keyValuePair.getValue());
                     }
                     if (null != part) {
                         parts.add(part);
