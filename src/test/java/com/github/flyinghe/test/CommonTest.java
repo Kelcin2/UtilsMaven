@@ -1,5 +1,6 @@
 package com.github.flyinghe.test;
 
+import com.github.flyinghe.domain.Person;
 import com.github.flyinghe.domain.Pet;
 import com.github.flyinghe.domain.TestObj;
 import com.github.flyinghe.domain.User;
@@ -12,8 +13,10 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.junit.Test;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.*;
@@ -97,5 +100,25 @@ public class CommonTest {
         List<Map<String, Object>> datas = xlsxReader.getDatas();
         BigDecimal bd = new BigDecimal(6.45645756745645E+21);
         System.out.println(datas);
+    }
+
+    @Test
+    public void test5() {
+        Field age = ReflectionUtils.findField(Person.class, "age1");
+        System.out.println(age);
+    }
+
+    @Test
+    public void test6() throws Exception {
+        Person person = CommonUtils.mapToBean(new HashMap<String, Object>() {{
+            put("age", 111);
+            put("address", "成都市天府广场");
+            put("birthday", "2019-11-16 12:04:55.666");
+            put("birthdaies", new ArrayList<String>() {{
+                add("2019-11-16 12:04:55.666");
+                add("2019-11-17 12:09:55");
+            }});
+        }}, Person.class);
+        System.out.println(person);
     }
 }

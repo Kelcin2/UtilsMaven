@@ -269,6 +269,28 @@ public class HttpUtils {
     }
 
     /**
+     * 执行一个Post请求，并将返回的Json数据解析到Map中
+     *
+     * @param url       请求url
+     * @param paramBody Post请求体,会被解析成Json数据放入Post请求体中
+     * @param username  用户名
+     * @param pwd       密码
+     * @return 将返回的数据解析成的Map对象, 若返回数据为空则返回null
+     * @throws Exception
+     */
+    public static Map<String, Object> execPostJson(String url, Map<String, Object> paramBody, String username,
+                                                   String pwd) throws Exception {
+        String body = null == paramBody ? "" : objectMapper.writeValueAsString(paramBody);
+        String responseBody = HttpUtils
+                .execPost(url, HttpUtils.getAuthHeaderList(username, pwd), HttpUtils.CONTENT_TYPE_JSON, null, body);
+        if (StringUtils.isNotBlank(responseBody)) {
+            return objectMapper.readValue(responseBody,
+                    typeFactory.constructMapType(HashMap.class, String.class, Object.class));
+        }
+        return null;
+    }
+
+    /**
      * 执行一个Post请求，并返回字符串数据(一般用于请求体数据为Json)
      *
      * @param url        请求url
