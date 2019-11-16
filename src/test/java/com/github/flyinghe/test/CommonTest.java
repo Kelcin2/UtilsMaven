@@ -10,6 +10,7 @@ import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.ExcelWriter;
 import com.github.flyinghe.tools.XLSXReader;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.junit.Test;
@@ -120,5 +121,11 @@ public class CommonTest {
             }});
         }}, Person.class);
         System.out.println(person);
+    }
+
+    @Test
+    public void test7() {
+        StringPart stringPart = new StringPart("name", "va");
+        System.out.println(stringPart.toString());
     }
 }

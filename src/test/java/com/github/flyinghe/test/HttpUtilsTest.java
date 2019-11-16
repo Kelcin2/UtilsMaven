@@ -2,7 +2,7 @@ package com.github.flyinghe.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.flyinghe.tools.CommonUtils;
-import com.github.flyinghe.tools.HttpUtils;
+import com.github.flyinghe.tools.http.HttpUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
@@ -54,7 +54,7 @@ public class HttpUtilsTest {
         String url =
                 "http://10.0.6.11:7003/ApprovalSB/Qualification/Gxp/ProxyServices/ApGxpQualifyCheckSyncSoapProxy?wsdl";
         String paramBody = FileUtils.readFileToString(new File("C:\\Users\\FlyingHe\\Desktop\\资质证校验.xml"));
-        String result = HttpUtils
+        String result = new HttpUtils()
                 .execPost(url, HttpUtils.getAuthHeaderList("esb_ebs01", "gkht_7890"), HttpUtils.CONTENT_TYPE_XML, null,
                         paramBody);
         System.out.println(result);

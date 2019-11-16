@@ -1,4 +1,4 @@
-package com.github.flyinghe.tools;
+package com.github.flyinghe.tools.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -6,8 +6,11 @@ import com.github.flyinghe.depdcy.FlyingFilePart;
 import com.github.flyinghe.depdcy.KeyValuePair;
 import com.github.flyinghe.depdcy.NameFilePair;
 import com.github.flyinghe.depdcy.NamePartSourcePair;
+import com.github.flyinghe.tools.CommonUtils;
+import com.github.flyinghe.tools.Ognl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.NameValuePair;
@@ -20,6 +23,7 @@ import org.apache.commons.httpclient.methods.multipart.PartSource;
 import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -34,15 +38,86 @@ import java.util.Map;
 public class HttpUtils {
     public static final String CONTENT_TYPE_JSON = "application/json";
     public static final String CONTENT_TYPE_XML = "application/xml";
-
-    private static HttpClient httpClient;
     private static ObjectMapper objectMapper;
     private static TypeFactory typeFactory;
+    private HttpClient httpClient;
+    private DefaultHttpMethodRetryHandler retryHandler;
+    private Logger logger;
 
     static {
-        httpClient = new HttpClient();
         objectMapper = new ObjectMapper();
         typeFactory = objectMapper.getTypeFactory();
+    }
+
+    public HttpUtils() {
+        this(null, null, null, null, null);
+    }
+
+    /**
+     * @param connectionTimeout 建立连接时间,0不限制
+     */
+    public HttpUtils(Integer connectionTimeout) {
+        this(null, null, connectionTimeout, null, null);
+    }
+
+    /**
+     * @param connectionTimeout 建立连接时间,0不限制
+     * @param logger            日志记录器
+     */
+    public HttpUtils(Integer connectionTimeout, Logger logger) {
+        this(null, null, connectionTimeout, null, logger);
+    }
+
+    /**
+     * @param soTimeout         等待数据时间,0不限制
+     * @param connectionTimeout 建立连接时间,0不限制
+     */
+    public HttpUtils(Integer soTimeout, Integer connectionTimeout) {
+        this(null, soTimeout, connectionTimeout, null, null);
+    }
+
+    /**
+     * @param soTimeout         等待数据时间,0不限制
+     * @param connectionTimeout 建立连接时间,0不限制
+     * @param logger            日志记录器
+     */
+    public HttpUtils(Integer soTimeout, Integer connectionTimeout, Logger logger) {
+        this(null, soTimeout, connectionTimeout, null, logger);
+    }
+
+    /**
+     * @param soTimeout         等待数据时间,0不限制
+     * @param connectionTimeout 建立连接时间,0不限制
+     * @param retryCount        失败重试次数
+     * @param logger            日志记录器
+     */
+    public HttpUtils(Integer soTimeout, Integer connectionTimeout, Integer retryCount, Logger logger) {
+        this(null, soTimeout, connectionTimeout, retryCount, logger);
+    }
+
+    /**
+     * @param httpClient        httpClient
+     * @param soTimeout         等待数据时间,0不限制
+     * @param connectionTimeout 建立连接时间,0不限制
+     * @param retryCount        失败重试次数
+     * @param logger            日志记录器
+     */
+    public HttpUtils(HttpClient httpClient, Integer soTimeout, Integer connectionTimeout, Integer retryCount,
+                     Logger logger) {
+        if (null == httpClient) {
+            this.httpClient = new HttpClient();
+        }
+        if (null != soTimeout) {
+            this.httpClient.getHttpConnectionManager().getParams().setSoTimeout(soTimeout);
+        }
+        if (null != connectionTimeout) {
+            this.httpClient.getHttpConnectionManager().getParams().setConnectionTimeout(connectionTimeout);
+        }
+
+        if (null != retryCount) {
+            this.retryHandler = new DefaultHttpMethodRetryHandler(retryCount, false);
+        }
+        this.logger = logger;
     }
 
     public static Header getAuthHeader(String username, String pwd) {
@@ -73,7 +148,7 @@ public class HttpUtils {
      * @return 将返回的数据解析成的clazz对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static <RES> RES execGetJson(String url, List<NameValuePair> queryParams, Class<RES> clazz)
+    public <RES> RES execGetJson(String url, List<NameValuePair> queryParams, Class<RES> clazz)
             throws Exception {
         RES result = null;
         String responseBody = execGet(url, queryParams);
@@ -93,7 +168,7 @@ public class HttpUtils {
      * @return 将返回的数据解析成的clazz对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static <RES> RES execGetJson(String url, Map<String, String> queryParam, Class<RES> clazz)
+    public <RES> RES execGetJson(String url, Map<String, String> queryParam, Class<RES> clazz)
             throws Exception {
         RES result = null;
 
@@ -116,7 +191,7 @@ public class HttpUtils {
      * @return 返回解析后的Map, 若没有数据返回null
      * @throws Exception
      */
-    public static Map<String, Object> execGetJson(String url, List<NameValuePair> queryParams) throws Exception {
+    public Map<String, Object> execGetJson(String url, List<NameValuePair> queryParams) throws Exception {
         Map<String, Object> result = null;
         String responseBody = execGet(url, queryParams);
         if (StringUtils.isNotBlank(responseBody)) {
@@ -134,7 +209,7 @@ public class HttpUtils {
      * @return 返回解析后的Map, 若没有数据返回null
      * @throws Exception
      */
-    public static Map<String, Object> execGetJson(String url, Map<String, String> queryParams) throws Exception {
+    public Map<String, Object> execGetJson(String url, Map<String, String> queryParams) throws Exception {
         Map<String, Object> result = null;
         List<NameValuePair> nameValuePairList = new ArrayList<>();
         if (MapUtils.isNotEmpty(queryParams)) {
@@ -156,7 +231,7 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static String execGet(String url, List<NameValuePair> queryParams) throws Exception {
+    public String execGet(String url, List<NameValuePair> queryParams) throws Exception {
         return execGet(url, null, queryParams);
     }
 
@@ -169,11 +244,14 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static String execGet(String url, List<Header> requestHeaders, List<NameValuePair> queryParams)
+    public String execGet(String url, List<Header> requestHeaders, List<NameValuePair> queryParams)
             throws Exception {
         String result = null;
         GetMethod getMethod =
                 new GetMethod(url);
+        if (null != this.retryHandler) {
+            getMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
+        }
         if (CollectionUtils.isNotEmpty(queryParams)) {
             getMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
@@ -181,7 +259,7 @@ public class HttpUtils {
             requestHeaders.forEach(getMethod::setRequestHeader);
         }
         try {
-            httpClient.executeMethod(getMethod);
+            this.httpClient.executeMethod(getMethod);
             if (200 != getMethod.getStatusCode()) {
                 throw new Exception(
                         String.format("请求url【%s】未返回200【%d】,ERROR:【%s】【%s】", url, getMethod.getStatusCode(),
@@ -191,6 +269,9 @@ public class HttpUtils {
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         } finally {
+            if (null != this.logger) {
+                getLog(getMethod, this.logger);
+            }
             getMethod.releaseConnection();
         }
         return result;
@@ -208,7 +289,7 @@ public class HttpUtils {
      * @return 将返回的数据解析成的clazz对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static <REQ, RES> RES execPostJson(String url, REQ paramBody, Class<RES> clazz) throws Exception {
+    public <REQ, RES> RES execPostJson(String url, REQ paramBody, Class<RES> clazz) throws Exception {
         return execPostJson(url, null, paramBody, clazz);
     }
 
@@ -220,7 +301,7 @@ public class HttpUtils {
      * @return 将返回的数据解析成的Map对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static Map<String, Object> execPostJson(String url, Map<String, Object> paramBody) throws Exception {
+    public Map<String, Object> execPostJson(String url, Map<String, Object> paramBody) throws Exception {
         return execPostJson(url, null, paramBody);
     }
 
@@ -233,8 +314,8 @@ public class HttpUtils {
      * @return 将返回的数据解析成的Map对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static Map<String, Object> execPostJson(String url, Map<String, String> queryParam,
-                                                   Map<String, Object> paramBody) throws Exception {
+    public Map<String, Object> execPostJson(String url, Map<String, String> queryParam,
+                                            Map<String, Object> paramBody) throws Exception {
 
         Map<String, Object> result = null;
         String responseBody = execPost(url, queryParam, paramBody);
@@ -258,8 +339,8 @@ public class HttpUtils {
      * @return 将返回的数据解析成的clazz对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static <REQ, RES> RES execPostJson(String url, Map<String, String> queryParam,
-                                              REQ paramBody, Class<RES> clazz) throws Exception {
+    public <REQ, RES> RES execPostJson(String url, Map<String, String> queryParam,
+                                       REQ paramBody, Class<RES> clazz) throws Exception {
         RES result = null;
         String responseBody = execPost(url, queryParam, paramBody);
         if (StringUtils.isNotBlank(responseBody)) {
@@ -278,11 +359,11 @@ public class HttpUtils {
      * @return 将返回的数据解析成的Map对象, 若返回数据为空则返回null
      * @throws Exception
      */
-    public static Map<String, Object> execPostJson(String url, Map<String, Object> paramBody, String username,
-                                                   String pwd) throws Exception {
+    public Map<String, Object> execPostJson(String url, Map<String, Object> paramBody, String username,
+                                            String pwd) throws Exception {
         String body = null == paramBody ? "" : objectMapper.writeValueAsString(paramBody);
-        String responseBody = HttpUtils
-                .execPost(url, HttpUtils.getAuthHeaderList(username, pwd), HttpUtils.CONTENT_TYPE_JSON, null, body);
+        String responseBody =
+                this.execPost(url, HttpUtils.getAuthHeaderList(username, pwd), HttpUtils.CONTENT_TYPE_JSON, null, body);
         if (StringUtils.isNotBlank(responseBody)) {
             return objectMapper.readValue(responseBody,
                     typeFactory.constructMapType(HashMap.class, String.class, Object.class));
@@ -299,7 +380,7 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static String execPost(String url, Map<String, String> queryParam, Object paramBody)
+    public String execPost(String url, Map<String, String> queryParam, Object paramBody)
             throws Exception {
         List<NameValuePair> nameValuePairList = null;
         if (MapUtils.isNotEmpty(queryParam)) {
@@ -320,7 +401,7 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static String execPost(String url, List<NameValuePair> queryParams, Object paramBody)
+    public String execPost(String url, List<NameValuePair> queryParams, Object paramBody)
             throws Exception {
         return execPost(url, null, CONTENT_TYPE_JSON, queryParams,
                 paramBody != null ? objectMapper.writeValueAsString(paramBody) : "");
@@ -335,9 +416,9 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static String execPost(String url, List<Header> requestHeaders, String contentType,
-                                  List<NameValuePair> queryParams,
-                                  String paramBody)
+    public String execPost(String url, List<Header> requestHeaders, String contentType,
+                           List<NameValuePair> queryParams,
+                           String paramBody)
             throws Exception {
         if (StringUtils.isBlank(contentType)) {
             contentType = CONTENT_TYPE_JSON;
@@ -348,16 +429,20 @@ public class HttpUtils {
 
         String result = null;
         PostMethod postMethod = new PostMethod(url);
+        if (null != this.retryHandler) {
+            postMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
+        }
         if (CollectionUtils.isNotEmpty(queryParams)) {
             postMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
         if (CollectionUtils.isNotEmpty(requestHeaders)) {
             requestHeaders.forEach(postMethod::setRequestHeader);
         }
+        StringRequestEntity stringRequestEntity = null;
         try {
-            StringRequestEntity stringRequestEntity = new StringRequestEntity(paramBody, contentType, "UTF-8");
+            stringRequestEntity = new StringRequestEntity(paramBody, contentType, "UTF-8");
             postMethod.setRequestEntity(stringRequestEntity);
-            httpClient.executeMethod(postMethod);
+            this.httpClient.executeMethod(postMethod);
             if (200 != postMethod.getStatusCode()) {
                 throw new Exception(
                         String.format("请求url【%s】未返回200【%d】,ERROR:【%s】【%s】", url, postMethod.getStatusCode(),
@@ -367,6 +452,9 @@ public class HttpUtils {
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         } finally {
+            if (null != this.logger) {
+                postLog(postMethod, stringRequestEntity, this.logger);
+            }
             postMethod.releaseConnection();
         }
         return result;
@@ -380,7 +468,7 @@ public class HttpUtils {
      * @return 返回字符串数据(一般为Json)
      * @throws Exception
      */
-    public static <RES> RES execPostFile(String url, Map<String, File> fileParam, Class<RES> clazz)
+    public <RES> RES execPostFile(String url, Map<String, File> fileParam, Class<RES> clazz)
             throws Exception {
         RES result = null;
         List<NameFilePair> filePairs = new ArrayList<>();
@@ -402,7 +490,7 @@ public class HttpUtils {
      * @return 返回字符串数据(一般为Json)
      * @throws Exception
      */
-    public static <RES> RES execPostFilePS(String url, Map<String, PartSource> fileParam, Class<RES> clazz)
+    public <RES> RES execPostFilePS(String url, Map<String, PartSource> fileParam, Class<RES> clazz)
             throws Exception {
         RES result = null;
         List<NamePartSourcePair> namePartSourcePairs = new ArrayList<>();
@@ -427,19 +515,23 @@ public class HttpUtils {
      * @return 返回字符串数据
      * @throws Exception
      */
-    public static <T extends KeyValuePair> String execPostFile(String url, List<Header> requestHeaders,
-                                                               List<NameValuePair> queryParams,
-                                                               List<NameValuePair> formdataParams,
-                                                               List<T> fileParams)
+    public <T extends KeyValuePair> String execPostFile(String url, List<Header> requestHeaders,
+                                                        List<NameValuePair> queryParams,
+                                                        List<NameValuePair> formdataParams,
+                                                        List<T> fileParams)
             throws Exception {
         String result = null;
         PostMethod postMethod = new PostMethod(url);
+        if (null != this.retryHandler) {
+            postMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
+        }
         if (CollectionUtils.isNotEmpty(queryParams)) {
             postMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
         if (CollectionUtils.isNotEmpty(requestHeaders)) {
             requestHeaders.forEach(postMethod::setRequestHeader);
         }
+        MultipartRequestEntity multipartRequestEntity = null;
         try {
             List<Part> parts = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(formdataParams)) {
@@ -459,10 +551,11 @@ public class HttpUtils {
                 }
             }
             if (CollectionUtils.isNotEmpty(parts)) {
-                postMethod.setRequestEntity(
-                        new MultipartRequestEntity(parts.toArray(new Part[]{}), new HttpMethodParams()));
+                multipartRequestEntity =
+                        new MultipartRequestEntity(parts.toArray(new Part[]{}), new HttpMethodParams());
+                postMethod.setRequestEntity(multipartRequestEntity);
             }
-            httpClient.executeMethod(postMethod);
+            this.httpClient.executeMethod(postMethod);
             if (200 != postMethod.getStatusCode()) {
                 throw new Exception(
                         String.format("请求url【%s】未返回200【%d】,ERROR:【%s】【%s】", url, postMethod.getStatusCode(),
@@ -472,8 +565,143 @@ public class HttpUtils {
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         } finally {
+            if (null != this.logger) {
+                postLog(postMethod, multipartRequestEntity, formdataParams, fileParams, this.logger);
+            }
             postMethod.releaseConnection();
         }
         return result;
+    }
+
+    public static void getLog(GetMethod getMethod, Logger logger) {
+        String url = getMethod.getPath();
+        String method = "GET";
+        String queryParam = getMethod.getQueryString();
+        String respStatus = String.valueOf(getMethod.getStatusCode());
+        String returnStr = "";
+        try {
+            returnStr = getMethod.getResponseBodyAsString();
+        } catch (Exception e) {
+            //do nothing
+        }
+        StringBuilder msgSb = new StringBuilder();
+        msgSb.append(String.format("url:%s\r\n", url))
+                .append(String.format("method:%s\r\n", method))
+                .append(String.format("queryParam:%s\r\n", queryParam))
+                .append("Header:[\r\n");
+        Header[] requestHeaders = getMethod.getRequestHeaders();
+        if (Ognl.isNotEmpty(requestHeaders)) {
+            for (int i = 0; i < requestHeaders.length; i++) {
+                Header header = requestHeaders[i];
+                msgSb.append(String.format("\t%s:%s\r\n", header.getName(), header.getValue()));
+            }
+        }
+        msgSb.append("]\r\n")
+                .append(String.format("responseStatus:%s\r\n", respStatus))
+                .append(String.format("response:%s\r\n", returnStr))
+                .append("========================================================================");
+        logger.debug(msgSb.toString());
+    }
+
+    public static void postLog(PostMethod postMethod, StringRequestEntity entity, Logger logger) {
+        String url = postMethod.getPath();
+        String method = "POST";
+        String contentType = "";
+        String charSet = "";
+        String payloadStr = "";
+        if (null != entity) {
+            contentType = entity.getContentType();
+            charSet = entity.getCharset();
+            payloadStr = entity.getContent();
+        }
+        String queryParam = postMethod.getQueryString();
+        String respStatus = String.valueOf(postMethod.getStatusCode());
+        String returnStr = "";
+        try {
+            returnStr = postMethod.getResponseBodyAsString();
+        } catch (Exception e) {
+            //do nothing
+        }
+        StringBuilder msgSb = new StringBuilder();
+        msgSb.append(String.format("url:%s\r\n", url))
+                .append(String.format("method:%s\r\n", method))
+                .append(String.format("contentType:%s\r\n", contentType))
+                .append(String.format("charSet:%s\r\n", charSet))
+                .append(String.format("queryParam:%s\r\n", queryParam))
+                .append("Header:[\r\n");
+        Header[] requestHeaders = postMethod.getRequestHeaders();
+        if (Ognl.isNotEmpty(requestHeaders)) {
+            for (int i = 0; i < requestHeaders.length; i++) {
+                Header header = requestHeaders[i];
+                msgSb.append(String.format("\t%s:%s\r\n", header.getName(), header.getValue()));
+            }
+        }
+        msgSb.append("]\r\n")
+                .append(String.format("payload:%s\r\n", payloadStr))
+                .append(String.format("responseStatus:%s\r\n", respStatus))
+                .append(String.format("response:%s\r\n", returnStr))
+                .append("========================================================================");
+        logger.debug(msgSb.toString());
+    }
+
+    public static <T extends KeyValuePair> void postLog(PostMethod postMethod, MultipartRequestEntity entity,
+                                                        List<NameValuePair> formdataParams,
+                                                        List<T> fileParams, Logger logger) {
+        String url = postMethod.getPath();
+        String method = "POST";
+        String contentType = "";
+        String contentLength = "";
+        if (null != entity) {
+            contentType = entity.getContentType();
+            contentLength = String.valueOf(entity.getContentLength());
+        }
+        String queryParam = postMethod.getQueryString();
+        String respStatus = String.valueOf(postMethod.getStatusCode());
+        String returnStr = "";
+        try {
+            returnStr = postMethod.getResponseBodyAsString();
+        } catch (Exception e) {
+            //do nothing
+        }
+        StringBuilder msgSb = new StringBuilder();
+        msgSb.append(String.format("url:%s\r\n", url))
+                .append(String.format("method:%s\r\n", method))
+                .append(String.format("contentType:%s\r\n", contentType))
+                .append(String.format("contentLength:%s\r\n", contentLength))
+                .append(String.format("queryParam:%s\r\n", queryParam))
+                .append("Header:[\r\n");
+        Header[] requestHeaders = postMethod.getRequestHeaders();
+        if (Ognl.isNotEmpty(requestHeaders)) {
+            for (int i = 0; i < requestHeaders.length; i++) {
+                Header header = requestHeaders[i];
+                msgSb.append(String.format("\t%s:%s\r\n", header.getName(), header.getValue()));
+            }
+        }
+        msgSb.append("]\r\n")
+                .append("FormdataParams:[\r\n");
+        if (CollectionUtils.isNotEmpty(formdataParams)) {
+            for (NameValuePair pair : formdataParams) {
+                msgSb.append(String.format("\t%s:%s\r\n", pair.getName(), pair.getValue()));
+            }
+        }
+        msgSb.append("]\r\n")
+                .append("FileParams:[\r\n");
+        if (CollectionUtils.isNotEmpty(fileParams)) {
+            for (KeyValuePair pair : fileParams) {
+                if (pair.getValue() instanceof File) {
+                    File file = (File) pair.getValue();
+                    msgSb.append(String.format("\t%s:%s(%d)\r\n", pair.getKey(), file.getName(), file.length()));
+                } else if (pair.getValue() instanceof PartSource) {
+                    PartSource partSource = (PartSource) pair.getValue();
+                    msgSb.append(String.format("\t%s:%s(%d)\r\n", pair.getKey(), partSource.getFileName(),
+                            partSource.getLength()));
+                }
+            }
+        }
+        msgSb.append("]\r\n")
+                .append(String.format("responseStatus:%s\r\n", respStatus))
+                .append(String.format("response:%s\r\n", returnStr))
+                .append("========================================================================");
+        logger.debug(msgSb.toString());
     }
 }
