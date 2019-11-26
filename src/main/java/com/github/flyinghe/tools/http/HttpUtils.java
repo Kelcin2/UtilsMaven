@@ -10,10 +10,7 @@ import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.Ognl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.NameValuePair;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
@@ -25,12 +22,11 @@ import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by FlyingHe on 2019/11/2.
@@ -106,6 +102,8 @@ public class HttpUtils {
                      Logger logger) {
         if (null == httpClient) {
             this.httpClient = new HttpClient();
+        } else {
+            this.httpClient = httpClient;
         }
         if (null != soTimeout) {
             this.httpClient.getHttpConnectionManager().getParams().setSoTimeout(soTimeout);
@@ -258,6 +256,7 @@ public class HttpUtils {
         if (CollectionUtils.isNotEmpty(requestHeaders)) {
             requestHeaders.forEach(getMethod::setRequestHeader);
         }
+        Exception _e = null;
         try {
             this.httpClient.executeMethod(getMethod);
             if (200 != getMethod.getStatusCode()) {
@@ -267,10 +266,11 @@ public class HttpUtils {
             }
             result = getMethod.getResponseBodyAsString();
         } catch (Exception e) {
-            throw new Exception(e.getMessage());
+            _e = e;
+            throw e;
         } finally {
             if (null != this.logger) {
-                getLog(getMethod, this.logger);
+                getLog(getMethod, this.logger, _e);
             }
             getMethod.releaseConnection();
         }
@@ -439,6 +439,7 @@ public class HttpUtils {
             requestHeaders.forEach(postMethod::setRequestHeader);
         }
         StringRequestEntity stringRequestEntity = null;
+        Exception _e = null;
         try {
             stringRequestEntity = new StringRequestEntity(paramBody, contentType, "UTF-8");
             postMethod.setRequestEntity(stringRequestEntity);
@@ -450,10 +451,11 @@ public class HttpUtils {
             }
             result = postMethod.getResponseBodyAsString();
         } catch (Exception e) {
-            throw new Exception(e.getMessage());
+            _e = e;
+            throw e;
         } finally {
             if (null != this.logger) {
-                postLog(postMethod, stringRequestEntity, this.logger);
+                postLog(postMethod, stringRequestEntity, this.logger, _e);
             }
             postMethod.releaseConnection();
         }
@@ -532,6 +534,7 @@ public class HttpUtils {
             requestHeaders.forEach(postMethod::setRequestHeader);
         }
         MultipartRequestEntity multipartRequestEntity = null;
+        Exception _e = null;
         try {
             List<Part> parts = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(formdataParams)) {
@@ -563,122 +566,150 @@ public class HttpUtils {
             }
             result = postMethod.getResponseBodyAsString();
         } catch (Exception e) {
-            throw new Exception(e.getMessage());
+            _e = e;
+            throw e;
         } finally {
             if (null != this.logger) {
-                postLog(postMethod, multipartRequestEntity, formdataParams, fileParams, this.logger);
+                postLog(postMethod, multipartRequestEntity, formdataParams, fileParams, this.logger, _e);
             }
             postMethod.releaseConnection();
         }
         return result;
     }
 
-    public static void getLog(GetMethod getMethod, Logger logger) {
-        String url = getMethod.getPath();
-        String method = "GET";
-        String queryParam = getMethod.getQueryString();
-        String respStatus = String.valueOf(getMethod.getStatusCode());
-        String returnStr = "";
-        try {
-            returnStr = getMethod.getResponseBodyAsString();
-        } catch (Exception e) {
-            //do nothing
+    public static String getExceptionMsg(Exception _e) {
+        String errorStack = "";
+        if (null != _e && Ognl.isNotEmpty(_e.getStackTrace())) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(baos);
+            _e.printStackTrace(ps);
+            try {
+                errorStack = baos.toString("UTF-8");
+            } catch (Exception e) {
+                //do nothing
+            } finally {
+                CommonUtils.closeIOStream(null, baos);
+                CommonUtils.closeIOStream(null, ps);
+            }
         }
-        StringBuilder msgSb = new StringBuilder();
-        msgSb.append(String.format("url:%s\r\n", url))
-                .append(String.format("method:%s\r\n", method))
-                .append(String.format("queryParam:%s\r\n", queryParam))
-                .append("Header:[\r\n");
-        Header[] requestHeaders = getMethod.getRequestHeaders();
-        if (Ognl.isNotEmpty(requestHeaders)) {
-            for (int i = 0; i < requestHeaders.length; i++) {
-                Header header = requestHeaders[i];
+        return errorStack;
+    }
+
+    public static void printHeader(StringBuilder msgSb, Header[] headers) {
+        if (Ognl.isNotEmpty(headers)) {
+            for (int i = 0; i < headers.length; i++) {
+                Header header = headers[i];
                 msgSb.append(String.format("\t%s:%s\r\n", header.getName(), header.getValue()));
             }
         }
+    }
+
+    public static void getLog(GetMethod getMethod, Logger logger, Exception _e) {
+        String uri = getMethod.getPath();
+        String method = "GET";
+        String queryParam = Optional.ofNullable(getMethod.getQueryString()).orElse("");
+        String respStatus =
+                Optional.ofNullable(getMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
+                        .orElse("");
+        String returnStr = "";
+        try {
+            returnStr = Optional.ofNullable(getMethod.getResponseBodyAsString()).orElse("");
+        } catch (Exception e) {
+            //do nothing
+        }
+        String errorStack = getExceptionMsg(_e);
+        StringBuilder msgSb = new StringBuilder();
+        msgSb.append(String.format("uri:%s\r\n", uri))
+                .append(String.format("method:%s\r\n", method))
+                .append(String.format("queryParam:%s\r\n", queryParam))
+                .append("RequestHeader:[\r\n");
+        printHeader(msgSb, getMethod.getRequestHeaders());
+        msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
+        printHeader(msgSb, getMethod.getResponseHeaders());
         msgSb.append("]\r\n")
                 .append(String.format("responseStatus:%s\r\n", respStatus))
                 .append(String.format("response:%s\r\n", returnStr))
+                .append(String.format("errorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
     }
 
-    public static void postLog(PostMethod postMethod, StringRequestEntity entity, Logger logger) {
-        String url = postMethod.getPath();
+    public static void postLog(PostMethod postMethod, StringRequestEntity entity, Logger logger, Exception _e) {
+        String uri = postMethod.getPath();
         String method = "POST";
         String contentType = "";
-        String charSet = "";
+        String requestCharSet = Optional.ofNullable(postMethod.getRequestCharSet()).orElse("");
+        String responseCharSet = Optional.ofNullable(postMethod.getResponseCharSet()).orElse("");
         String payloadStr = "";
         if (null != entity) {
             contentType = entity.getContentType();
-            charSet = entity.getCharset();
             payloadStr = entity.getContent();
         }
-        String queryParam = postMethod.getQueryString();
-        String respStatus = String.valueOf(postMethod.getStatusCode());
+        String queryParam = Optional.ofNullable(postMethod.getQueryString()).orElse("");
+        String respStatus =
+                Optional.ofNullable(postMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
+                        .orElse("");
         String returnStr = "";
         try {
-            returnStr = postMethod.getResponseBodyAsString();
+            returnStr = Optional.ofNullable(postMethod.getResponseBodyAsString()).orElse("");
         } catch (Exception e) {
             //do nothing
         }
+        String errorStack = getExceptionMsg(_e);
         StringBuilder msgSb = new StringBuilder();
-        msgSb.append(String.format("url:%s\r\n", url))
-                .append(String.format("method:%s\r\n", method))
-                .append(String.format("contentType:%s\r\n", contentType))
-                .append(String.format("charSet:%s\r\n", charSet))
-                .append(String.format("queryParam:%s\r\n", queryParam))
-                .append("Header:[\r\n");
-        Header[] requestHeaders = postMethod.getRequestHeaders();
-        if (Ognl.isNotEmpty(requestHeaders)) {
-            for (int i = 0; i < requestHeaders.length; i++) {
-                Header header = requestHeaders[i];
-                msgSb.append(String.format("\t%s:%s\r\n", header.getName(), header.getValue()));
-            }
-        }
+        msgSb.append(String.format("Uri:%s\r\n", uri))
+                .append(String.format("Method:%s\r\n", method))
+                .append(String.format("ContentType:%s\r\n", contentType))
+                .append(String.format("RequestCharSet:%s\r\n", requestCharSet))
+                .append(String.format("QueryParam:%s\r\n", queryParam))
+                .append("RequestHeader:[\r\n");
+        printHeader(msgSb, postMethod.getRequestHeaders());
+        msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
+        printHeader(msgSb, postMethod.getResponseHeaders());
         msgSb.append("]\r\n")
-                .append(String.format("payload:%s\r\n", payloadStr))
-                .append(String.format("responseStatus:%s\r\n", respStatus))
-                .append(String.format("response:%s\r\n", returnStr))
+                .append(String.format("Payload:%s\r\n", payloadStr))
+                .append(String.format("ResponseStatus:%s\r\n", respStatus))
+                .append(String.format("ResponseCharSet:%s\r\n", responseCharSet))
+                .append(String.format("Response:%s\r\n", returnStr))
+                .append(String.format("ErrorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
     }
 
     public static <T extends KeyValuePair> void postLog(PostMethod postMethod, MultipartRequestEntity entity,
                                                         List<NameValuePair> formdataParams,
-                                                        List<T> fileParams, Logger logger) {
-        String url = postMethod.getPath();
+                                                        List<T> fileParams, Logger logger, Exception _e) {
+        String uri = postMethod.getPath();
         String method = "POST";
         String contentType = "";
         String contentLength = "";
+        String responseCharSet = Optional.ofNullable(postMethod.getResponseCharSet()).orElse("");
         if (null != entity) {
             contentType = entity.getContentType();
-            contentLength = String.valueOf(entity.getContentLength());
+            contentLength = Optional.ofNullable(entity.getContentLength()).map(Objects::toString).orElse("");
         }
-        String queryParam = postMethod.getQueryString();
-        String respStatus = String.valueOf(postMethod.getStatusCode());
+        String queryParam = Optional.ofNullable(postMethod.getQueryString()).orElse("");
+        String respStatus =
+                Optional.ofNullable(postMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
+                        .orElse("");
         String returnStr = "";
         try {
-            returnStr = postMethod.getResponseBodyAsString();
+            returnStr = Optional.ofNullable(postMethod.getResponseBodyAsString()).orElse("");
         } catch (Exception e) {
             //do nothing
         }
+        String errorStack = getExceptionMsg(_e);
         StringBuilder msgSb = new StringBuilder();
-        msgSb.append(String.format("url:%s\r\n", url))
-                .append(String.format("method:%s\r\n", method))
-                .append(String.format("contentType:%s\r\n", contentType))
-                .append(String.format("contentLength:%s\r\n", contentLength))
-                .append(String.format("queryParam:%s\r\n", queryParam))
-                .append("Header:[\r\n");
-        Header[] requestHeaders = postMethod.getRequestHeaders();
-        if (Ognl.isNotEmpty(requestHeaders)) {
-            for (int i = 0; i < requestHeaders.length; i++) {
-                Header header = requestHeaders[i];
-                msgSb.append(String.format("\t%s:%s\r\n", header.getName(), header.getValue()));
-            }
-        }
-        msgSb.append("]\r\n")
-                .append("FormdataParams:[\r\n");
+        msgSb.append(String.format("Uri:%s\r\n", uri))
+                .append(String.format("Method:%s\r\n", method))
+                .append(String.format("ContentType:%s\r\n", contentType))
+                .append(String.format("ContentLength:%s\r\n", contentLength))
+                .append(String.format("QueryParam:%s\r\n", queryParam))
+                .append("RequestHeader:[\r\n");
+        printHeader(msgSb, postMethod.getRequestHeaders());
+        msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
+        printHeader(msgSb, postMethod.getResponseHeaders());
+        msgSb.append("]\r\n").append("FormdataParams:[\r\n");
         if (CollectionUtils.isNotEmpty(formdataParams)) {
             for (NameValuePair pair : formdataParams) {
                 msgSb.append(String.format("\t%s:%s\r\n", pair.getName(), pair.getValue()));
@@ -699,8 +730,10 @@ public class HttpUtils {
             }
         }
         msgSb.append("]\r\n")
-                .append(String.format("responseStatus:%s\r\n", respStatus))
-                .append(String.format("response:%s\r\n", returnStr))
+                .append(String.format("ResponseStatus:%s\r\n", respStatus))
+                .append(String.format("ResponseCharSet:%s\r\n", responseCharSet))
+                .append(String.format("Response:%s\r\n", returnStr))
+                .append(String.format("ErrorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
     }
