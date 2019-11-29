@@ -125,7 +125,13 @@ public class CommonTest {
 
     @Test
     public void test7() {
-        StringPart stringPart = new StringPart("name", "va");
-        System.out.println(stringPart.toString());
+        Map map = new HashMap();
+        map.put("name", "name");
+        Map pet = new HashMap();
+        pet.put("name", "pet");
+        pet.put("birth", new Date());
+        map.put("pet", pet);
+        User user = CommonUtils.toBean(map, User.class);
+        System.out.println(user);
     }
 }

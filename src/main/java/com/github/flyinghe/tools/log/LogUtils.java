@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by FlyingHe on 2019/10/28.
@@ -63,24 +64,25 @@ public class LogUtils {
     public static void logRestHttp(Level level, Logger logger, HttpServletRequest request, Object payload,
                                    Object returnObj) {
         try {
-            String uri = request.getRequestURI();
-            String method = request.getMethod();
-            String contentType = request.getContentType();
-            String queryParam = request.getQueryString();
+            String uri = Optional.ofNullable(request.getRequestURI()).orElse("");
+            String method = Optional.ofNullable(request.getMethod()).orElse("");
+            String contentType = Optional.ofNullable(request.getContentType()).orElse("");
+            String queryParam = Optional.ofNullable(request.getQueryString()).orElse("");
             String payloadStr = payload == null ? "" : objectMapper.writeValueAsString(payload);
             String returnStr = returnObj == null ? "" : objectMapper.writeValueAsString(returnObj);
             StringBuilder msgSb = new StringBuilder();
-            msgSb.append(String.format("uri:%s\r\n", uri))
-                    .append(String.format("method:%s\r\n", method))
-                    .append(String.format("contentType:%s\r\n", contentType))
-                    .append(String.format("queryParam:%s\r\n", queryParam))
-                    .append("Header:[\r\n");
+            msgSb.append(String.format("Uri:%s\r\n", uri))
+                    .append(String.format("Method:%s\r\n", method))
+                    .append(String.format("ContentType:%s\r\n", contentType))
+                    .append(String.format("QueryParam:%s\r\n", queryParam))
+                    .append("RequestHeader:[\r\n");
 
             Enumeration<String> headerNames = request.getHeaderNames();
             while (headerNames.hasMoreElements()) {
                 String headerName = headerNames.nextElement();
                 if (StringUtils.isNotBlank(request.getHeader(headerName))) {
-                    msgSb.append(String.format("\t%s:%s\r\n", headerName, request.getHeader(headerName)));
+                    msgSb.append(String.format("\t%s:%s\r\n", headerName,
+                            Optional.ofNullable(request.getHeader(headerName)).orElse("")));
                 } else {
                     Enumeration<String> headers = request.getHeaders(headerName);
                     List<String> headersList = new ArrayList<>();
@@ -92,8 +94,8 @@ public class LogUtils {
                 }
             }
             msgSb.append("]\r\n")
-                    .append(String.format("payload:%s\r\n", payloadStr))
-                    .append(String.format("response:%s\r\n", returnStr))
+                    .append(String.format("Payload:%s\r\n", payloadStr))
+                    .append(String.format("Response:%s\r\n", returnStr))
                     .append("========================================================================");
             if (Level.DEBUG.equals(level)) {
                 logger.debug(msgSb.toString());

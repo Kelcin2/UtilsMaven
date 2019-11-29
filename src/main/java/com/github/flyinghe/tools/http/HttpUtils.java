@@ -619,17 +619,17 @@ public class HttpUtils {
         }
         String errorStack = getExceptionMsg(_e);
         StringBuilder msgSb = new StringBuilder();
-        msgSb.append(String.format("uri:%s\r\n", uri))
-                .append(String.format("method:%s\r\n", method))
-                .append(String.format("queryParam:%s\r\n", queryParam))
+        msgSb.append(String.format("Uri:%s\r\n", uri))
+                .append(String.format("Method:%s\r\n", method))
+                .append(String.format("QueryParam:%s\r\n", queryParam))
                 .append("RequestHeader:[\r\n");
         printHeader(msgSb, getMethod.getRequestHeaders());
         msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
         printHeader(msgSb, getMethod.getResponseHeaders());
         msgSb.append("]\r\n")
-                .append(String.format("responseStatus:%s\r\n", respStatus))
-                .append(String.format("response:%s\r\n", returnStr))
-                .append(String.format("errorStack:%s\r\n", errorStack))
+                .append(String.format("ResponseStatus:%s\r\n", respStatus))
+                .append(String.format("Response:%s\r\n", returnStr))
+                .append(String.format("ErrorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
     }

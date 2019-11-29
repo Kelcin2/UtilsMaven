@@ -34,7 +34,8 @@ public class CommonUtils {
     }
 
     /**
-     * 将一个Map对象转换成一个Bean对象
+     * 将一个Map对象转换成一个Bean对象,
+     * 此方法属于简单转换(只会转第一层)
      *
      * @param property 一个Map对象，封装了相应的Bean中的属性
      * @param clazz    需要转换成的Bean
@@ -53,7 +54,8 @@ public class CommonUtils {
 
     /**
      * 将一个JavaBean对象的所有属性封装在Map中并返回，
-     * 注意只能将拥有Getter方法的属性才能取出并封装到Map中
+     * 注意只能将拥有Getter方法的属性才能取出并封装到Map中,
+     * 此方法属于简单转换(只会转第一层)
      *
      * @param bean 需要转换的Bean对象
      * @return 返回一个Map , 失败返回null
@@ -70,7 +72,8 @@ public class CommonUtils {
     }
 
     /**
-     * 将一个Bean转化成一个Map(所有属性均为Map或者List)
+     * 将一个Bean转化成一个Map(所有属性均为Map或者List),
+     * 此方法属于深度转换(无限层)
      *
      * @param bean 待转化的Bean
      * @return 返回转化成的Map
@@ -86,7 +89,23 @@ public class CommonUtils {
     }
 
     /**
-     * 将一个Map转化成一个Bean
+     * 将一个Map转化成一个Bean,
+     * 此方法属于深度转换(无限层)。
+     * 转换模型:
+     * ------------------------
+     * bean              map
+     * ------------------------
+     * T                任意类型
+     * bean              map
+     * list:T            map
+     * list:bean         map
+     * list:T            list:map
+     * list:bean         list:map
+     * list:Date         list:String
+     * list:其他类型      list:其他类型
+     * Date              String
+     * 其他类型           其他类型
+     * -------------------------
      *
      * @param obj   Map对象
      * @param clazz 被转换成的Bean的Class对象
@@ -118,8 +137,25 @@ public class CommonUtils {
                     //若该属性是一个泛型类型,则直接赋值
                     PropertyUtils.setSimpleProperty(bean, key, value);
                 } else if (value instanceof Map) {
-                    PropertyUtils.setSimpleProperty(bean, key,
-                            mapToBean(value, ReflectionUtils.findField(clazz, key).getType()));
+                    Class<?> propertyClazz = ReflectionUtils.findField(clazz, key).getType();
+                    if (!propertyClazz.getName().equalsIgnoreCase("java.util.List")) {
+                        PropertyUtils.setSimpleProperty(bean, key,
+                                mapToBean(value, ReflectionUtils.findField(clazz, key).getType()));
+                    } else {
+                        //map转list
+                        //判断这个list的泛型类型
+                        Type actualTypeArgument =
+                                ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType())
+                                        .getActualTypeArguments()[0];
+                        List propertyValue = new ArrayList<>();
+                        if (actualTypeArgument instanceof TypeVariable) {
+                            //若该List的泛型未指定具体类型,则直接赋值
+                            propertyValue.add(value);
+                        } else {
+                            propertyValue.add(mapToBean(value, (Class) actualTypeArgument));
+                        }
+                        PropertyUtils.setSimpleProperty(bean, key, propertyValue);
+                    }
                 } else if (value instanceof List) {
                     Class<?> propertyClazz = ReflectionUtils.findField(clazz, key).getType();
                     if (!propertyClazz.getName().equalsIgnoreCase("java.util.List")) {
@@ -176,6 +212,7 @@ public class CommonUtils {
      * @param <T>
      * @return
      * @throws Exception
+     * @see CommonUtils#mapToBean(Object, Class)
      */
     public static <T> List<T> listToBean(Object obj, Class<T> clazz) throws Exception {
         if (obj == null) {
