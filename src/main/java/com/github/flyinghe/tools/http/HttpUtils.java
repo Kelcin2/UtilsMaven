@@ -257,6 +257,7 @@ public class HttpUtils {
             requestHeaders.forEach(getMethod::setRequestHeader);
         }
         Exception _e = null;
+        long startTime = System.currentTimeMillis();
         try {
             this.httpClient.executeMethod(getMethod);
             if (200 != getMethod.getStatusCode()) {
@@ -269,8 +270,9 @@ public class HttpUtils {
             _e = e;
             throw e;
         } finally {
+            long endTime = System.currentTimeMillis();
             if (null != this.logger) {
-                getLog(getMethod, this.logger, _e);
+                getLog(getMethod, endTime - startTime, this.logger, _e);
             }
             getMethod.releaseConnection();
         }
@@ -440,6 +442,7 @@ public class HttpUtils {
         }
         StringRequestEntity stringRequestEntity = null;
         Exception _e = null;
+        long startTime = System.currentTimeMillis();
         try {
             stringRequestEntity = new StringRequestEntity(paramBody, contentType, "UTF-8");
             postMethod.setRequestEntity(stringRequestEntity);
@@ -454,8 +457,9 @@ public class HttpUtils {
             _e = e;
             throw e;
         } finally {
+            long endTime = System.currentTimeMillis();
             if (null != this.logger) {
-                postLog(postMethod, stringRequestEntity, this.logger, _e);
+                postLog(postMethod, stringRequestEntity, endTime - startTime, this.logger, _e);
             }
             postMethod.releaseConnection();
         }
@@ -535,6 +539,7 @@ public class HttpUtils {
         }
         MultipartRequestEntity multipartRequestEntity = null;
         Exception _e = null;
+        long startTime = System.currentTimeMillis();
         try {
             List<Part> parts = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(formdataParams)) {
@@ -569,8 +574,10 @@ public class HttpUtils {
             _e = e;
             throw e;
         } finally {
+            long endTime = System.currentTimeMillis();
             if (null != this.logger) {
-                postLog(postMethod, multipartRequestEntity, formdataParams, fileParams, this.logger, _e);
+                postLog(postMethod, multipartRequestEntity, formdataParams, fileParams, endTime - startTime,
+                        this.logger, _e);
             }
             postMethod.releaseConnection();
         }
@@ -604,7 +611,7 @@ public class HttpUtils {
         }
     }
 
-    public static void getLog(GetMethod getMethod, Logger logger, Exception _e) {
+    public static void getLog(GetMethod getMethod, Long exeTime, Logger logger, Exception _e) {
         String uri = getMethod.getPath();
         String method = "GET";
         String queryParam = Optional.ofNullable(getMethod.getQueryString()).orElse("");
@@ -617,6 +624,7 @@ public class HttpUtils {
         } catch (Exception e) {
             //do nothing
         }
+        String timeConsuming = null != exeTime ? String.valueOf(exeTime) : "";
         String errorStack = getExceptionMsg(_e);
         StringBuilder msgSb = new StringBuilder();
         msgSb.append(String.format("Uri:%s\r\n", uri))
@@ -629,12 +637,14 @@ public class HttpUtils {
         msgSb.append("]\r\n")
                 .append(String.format("ResponseStatus:%s\r\n", respStatus))
                 .append(String.format("Response:%s\r\n", returnStr))
+                .append(String.format("TimeConsuming:%s\r\n", timeConsuming))
                 .append(String.format("ErrorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
     }
 
-    public static void postLog(PostMethod postMethod, StringRequestEntity entity, Logger logger, Exception _e) {
+    public static void postLog(PostMethod postMethod, StringRequestEntity entity, Long exeTime, Logger logger,
+                               Exception _e) {
         String uri = postMethod.getPath();
         String method = "POST";
         String contentType = "";
@@ -655,6 +665,7 @@ public class HttpUtils {
         } catch (Exception e) {
             //do nothing
         }
+        String timeConsuming = null != exeTime ? String.valueOf(exeTime) : "";
         String errorStack = getExceptionMsg(_e);
         StringBuilder msgSb = new StringBuilder();
         msgSb.append(String.format("Uri:%s\r\n", uri))
@@ -671,6 +682,7 @@ public class HttpUtils {
                 .append(String.format("ResponseStatus:%s\r\n", respStatus))
                 .append(String.format("ResponseCharSet:%s\r\n", responseCharSet))
                 .append(String.format("Response:%s\r\n", returnStr))
+                .append(String.format("TimeConsuming:%s\r\n", timeConsuming))
                 .append(String.format("ErrorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
@@ -678,7 +690,7 @@ public class HttpUtils {
 
     public static <T extends KeyValuePair> void postLog(PostMethod postMethod, MultipartRequestEntity entity,
                                                         List<NameValuePair> formdataParams,
-                                                        List<T> fileParams, Logger logger, Exception _e) {
+                                                        List<T> fileParams, Long exeTime, Logger logger, Exception _e) {
         String uri = postMethod.getPath();
         String method = "POST";
         String contentType = "";
@@ -698,6 +710,7 @@ public class HttpUtils {
         } catch (Exception e) {
             //do nothing
         }
+        String timeConsuming = null != exeTime ? String.valueOf(exeTime) : "";
         String errorStack = getExceptionMsg(_e);
         StringBuilder msgSb = new StringBuilder();
         msgSb.append(String.format("Uri:%s\r\n", uri))
@@ -733,6 +746,7 @@ public class HttpUtils {
                 .append(String.format("ResponseStatus:%s\r\n", respStatus))
                 .append(String.format("ResponseCharSet:%s\r\n", responseCharSet))
                 .append(String.format("Response:%s\r\n", returnStr))
+                .append(String.format("TimeConsuming:%s\r\n", timeConsuming))
                 .append(String.format("ErrorStack:%s\r\n", errorStack))
                 .append("========================================================================");
         logger.debug(msgSb.toString());
