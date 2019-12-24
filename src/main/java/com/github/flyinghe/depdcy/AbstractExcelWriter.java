@@ -92,6 +92,10 @@ public abstract class AbstractExcelWriter<T> {
      */
     protected Sheet currentSheet = null;
     /**
+     * 当前Sheet的drawing patriarch
+     */
+    protected Drawing currentPatriarch = null;
+    /**
      * 标识上一行是否为空行(当需要写入空行时永远为false)
      */
     protected boolean isBlankLastRow = false;
@@ -116,14 +120,14 @@ public abstract class AbstractExcelWriter<T> {
      * 自定义cellStyle池,专门用于自定义的一些可复用的cellStyle,
      * 一般配合回调函数使用。
      *
-     * @see AbstractExcelWriter.HandleCellValue
+     * @see WriteExcelCallback#handleCellValue
      */
     private Map<String, CellStyle> cellStylePool = null;
     /**
-     * 用于修改默认而采用自定的cellValue或者cellStyle。需配合{@link AbstractExcelWriter.HandleCellValue}使用。
+     * 用于修改默认而采用自定的cellValue或者cellStyle。需配合{@link WriteExcelCallback#handleCellValue}使用。
      * 最多两个元素,Key命名参照:{@link #CELL_STYLE};{@link #CELL_VALUE}
      *
-     * @see AbstractExcelWriter.HandleCellValue
+     * @see WriteExcelCallback#handleCellValue
      * @see #CELL_STYLE
      * @see #CELL_VALUE
      */
@@ -243,18 +247,21 @@ public abstract class AbstractExcelWriter<T> {
     private Map<String, Integer> columnWidthMapping = null;
 
     /**
-     * handleRowReserved callback
+     * WriteExcelCallback
      *
-     * @see AbstractExcelWriter.HandleRowReserved
+     * @see WriteExcelCallback
      */
-    private HandleRowReserved<T> handleRowReserved = null;
-    /**
-     * handleCellValue callback
-     *
-     * @see AbstractExcelWriter.HandleCellValue
-     */
-    private HandleCellValue<T> handleCellValue = null;
+    private WriteExcelCallback<T> writeExcelCallback = null;
 
+
+    /**
+     * 获取当前workbook
+     *
+     * @return 获取当前workbook
+     */
+    public Workbook getWorkbook() {
+        return this.workbook;
+    }
 
     /**
      * 获取自定义cellStyle池
@@ -292,6 +299,51 @@ public abstract class AbstractExcelWriter<T> {
      */
     public int getRealDataInExcel() {
         return !this.isWriteTitle ? this.realRowInExcel : (this.realRowInExcel - this.allSheetInExcel);
+    }
+
+    /**
+     * 获取当前Sheet的drawing patriarch
+     *
+     * @return 当前Sheet的drawing patriarch
+     */
+    public Drawing getCurrentPatriarch() {
+        if (null != this.currentSheet && null == this.currentPatriarch) {
+            this.currentPatriarch = this.currentSheet.createDrawingPatriarch();
+        }
+        return this.currentPatriarch;
+    }
+
+    /**
+     * 获取上一行是否为空行
+     *
+     * @return 获取上一行是否为空行
+     */
+    public boolean isBlankLastRow() {
+        return this.isBlankLastRow;
+    }
+
+    /**
+     * 手动将行指针下移1行
+     *
+     * @return 下移后的指针
+     * @see #next(int)
+     */
+    public int next() {
+        return this.next(1);
+    }
+
+    /**
+     * 手动将行指针下移n行,一般在Excel回调方法中会使用(例如在回调方法中自行向Excel插入数据时),
+     * 注意:调用此方法会重置{@link #isBlankLastRow},{@link #lastRow}属性
+     *
+     * @param n 将行指针下移的行数
+     * @return 下移后的指针
+     */
+    public int next(int n) {
+        this.currentRowInSheet += n;
+        this.isBlankLastRow = false;
+        this.lastRow = null;
+        return this.currentRowInSheet;
     }
 
     /**
@@ -341,6 +393,20 @@ public abstract class AbstractExcelWriter<T> {
     }
 
     /**
+     * 创建一个Cell
+     *
+     * @param row       行对象
+     * @param column    列坐标
+     * @param cellStyle 单元格样式对象
+     * @return 创建后的Cell
+     */
+    public Cell createCell(Row row, int column, CellStyle cellStyle) {
+        Cell cell = row.createCell(column);
+        cell.setCellStyle(cellStyle);
+        return cell;
+    }
+
+    /**
      * 获取属性名到日期格式的映射
      *
      * @return 返回属性名到日期格式的映射
@@ -381,26 +447,26 @@ public abstract class AbstractExcelWriter<T> {
 
     /**
      * 将value放入到map中,
-     * 此方法在{@link AbstractExcelWriter.HandleCellValue}
+     * 此方法在{@link WriteExcelCallback#handleCellValue}
      * 回调中使用
      *
      * @param value 需要被放入的值
      */
     public void putCellValueToMap(Object value) {
-        if (null != this.handleCellValue) {
+        if (null != this.writeExcelCallback) {
             this.map.put(CELL_VALUE, value);
         }
     }
 
     /**
      * 将cellStyle放入到map中,
-     * 此方法在{@link AbstractExcelWriter.HandleCellValue}
+     * 此方法在{@link WriteExcelCallback#handleCellValue}
      * 回调中使用
      *
      * @param cellStyle 需要被放入的cellStyle
      */
     public void putCellStyleToMap(CellStyle cellStyle) {
-        if (null != this.handleCellValue) {
+        if (null != this.writeExcelCallback) {
             this.map.put(CELL_STYLE, cellStyle);
         }
     }
@@ -540,26 +606,12 @@ public abstract class AbstractExcelWriter<T> {
 
 
     /**
-     * 设置handleRowReserved callback,
-     * 只有设置有预留行时(即{@link #rowNumReserved}&gt;=0)才会回调
+     * 设置Excel回调方法
      *
-     * @param handleRowReserved handleRowReserved callback
-     * @see #handleRowReserved
+     * @param writeExcelCallback Excel回调方法
      */
-    public void setHandleRowReserved(HandleRowReserved<T> handleRowReserved) {
-        if (this.rowNumReserved > 0) {
-            this.handleRowReserved = handleRowReserved;
-        }
-    }
-
-    /**
-     * 设置handleCellValue callback
-     *
-     * @param handleCellValue handleRowReserved callback
-     * @see #handleCellValue
-     */
-    public void setHandleCellValue(HandleCellValue<T> handleCellValue) {
-        this.handleCellValue = handleCellValue;
+    public void setWriteExcelCallback(WriteExcelCallback<T> writeExcelCallback) {
+        this.writeExcelCallback = writeExcelCallback;
     }
 
     /**
@@ -814,7 +866,7 @@ public abstract class AbstractExcelWriter<T> {
             this.defaultTitleCellStyle.setAlignment(HorizontalAlignment.CENTER);
             this.defaultTitleCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         }
-        if (this.handleCellValue != null) {
+        if (this.writeExcelCallback != null && null == this.map) {
             this.map = new HashMap<>(2);
         }
     }
@@ -891,9 +943,9 @@ public abstract class AbstractExcelWriter<T> {
             currenCol++;
             if (data.containsKey(property)) {
                 Cell cell = row.createCell(currenCol);
-                if (this.handleCellValue != null) {
+                if (this.writeExcelCallback != null) {
                     this.map.clear();
-                    this.handleCellValue.callback(property, data.get(property), originData, this);
+                    this.writeExcelCallback.handleCellValue(property, data.get(property), originData, this);
                 }
                 CellStyle cellStyleTemp = this.defaultCellStyle;
                 Object value = data.get(property);
@@ -951,9 +1003,10 @@ public abstract class AbstractExcelWriter<T> {
         }
         this.allSheetInExcel++;
         this.currentRowInSheet = this.startRowIndex - 1;
+        this.currentPatriarch = null;
         //预留行回调
-        if (null != this.handleRowReserved) {
-            this.handleRowReserved.callback(this.currentSheet, this);
+        if (null != this.writeExcelCallback && this.rowNumReserved >= 0) {
+            this.writeExcelCallback.handleRowReserved(this.currentSheet, this);
         }
         this.writeTitle();
     }
@@ -993,6 +1046,11 @@ public abstract class AbstractExcelWriter<T> {
         if (this.needInitSheet()) {
             this.initSheet();
         }
+        //写入行前置回调
+        if (null != this.writeExcelCallback &&
+                !this.writeExcelCallback.beforeWritePerRow(data, this.currentRowInSheet, this.currentSheet, this)) {
+            return;
+        }
         //将data转换成Map数据结构
         Map<String, Object> mapBean = null;
         if (data instanceof Map) {
@@ -1021,6 +1079,10 @@ public abstract class AbstractExcelWriter<T> {
             //是空行并且不需要写入空行
             this.isBlankLastRow = true;
             this.lastRow = rowTemp;
+        }
+        //写入行后置回调
+        if (null != this.writeExcelCallback) {
+            this.writeExcelCallback.afterWritePerRow(data, this.currentRowInSheet, this.currentSheet, this);
         }
     }
 
@@ -1101,42 +1163,59 @@ public abstract class AbstractExcelWriter<T> {
 
 
     /**
-     * 当写入每个Sheet的预留行时调用,你可以使用此回调对预留行的内容进行自定义
+     * 写入Excel时的一些回调方法
      */
-    public interface HandleRowReserved<T> {
+    public interface WriteExcelCallback<T> {
         /**
-         * 详情参见{@link AbstractExcelWriter.HandleRowReserved}
+         * 当写入每个Sheet的预留行时调用,你可以使用此回调对预留行的内容进行自定义
          *
          * @param sheet  当前正在写入的Sheet
          * @param writer 当前{@link AbstractExcelWriter}实现类对象,可以使用此对象获取{@link CellStyle}和{@link org.apache.poi.ss.usermodel.Font}对象
          */
-        public void callback(Sheet sheet, AbstractExcelWriter<T> writer) throws WriteExcelException;
-    }
+        default public void handleRowReserved(Sheet sheet, AbstractExcelWriter<T> writer) throws WriteExcelException {}
 
-    /**
-     * 当在设置数据单元格的值时调用,你可以使用此回调来修改即将写入单元格的值,
-     * 同时你也可以通过传入的cellStyle来修改此单元格的样式。
-     * 需要注意的是:若你需要修改即将写入单元格的值或者样式,你需要将修改后的值或者样式cellStyle对象通过
-     * {@link #putCellValueToMap(Object)}和
-     * {@link #putCellStyleToMap(CellStyle)}放入
-     * map中。若你不想修改默认的值或者样式,不需要调用以上两个方法即可
-     *
-     * @see #CELL_VALUE
-     * @see #CELL_STYLE
-     */
-    public interface HandleCellValue<T> {
         /**
-         * 详情参见{@link AbstractExcelWriter.HandleCellValue}
+         * 当在设置数据单元格的值时调用,你可以使用此回调来修改即将写入单元格的值,
+         * 同时你也可以通过传入的cellStyle来修改此单元格的样式。
+         * 需要注意的是:若你需要修改即将写入单元格的值或者样式,你需要将修改后的值或者样式cellStyle对象通过
+         * {@link #putCellValueToMap(Object)}和
+         * {@link #putCellStyleToMap(CellStyle)}放入
+         * map中。若你不想修改默认的值或者样式,不需要调用以上两个方法即可
          *
          * @param property 该数据单元格对应的属性名
          * @param value    该数据单元格对应的数据值
          * @param data     该行数据
          * @param writer   当前{@link AbstractExcelWriter}实现类对象,可以使用此对象获取{@link CellStyle}和{@link org.apache.poi.ss.usermodel.Font}对象,
          *                 自定义的cellStyle需要放入{@link #cellStylePool}中以便复用,因为POI对cellStyle对象的创建数量有限制
+         * @see #CELL_VALUE
+         * @see #CELL_STYLE
          * @see #cellStylePool
          * @see #map
          */
-        public void callback(String property, Object value, T data, AbstractExcelWriter<T> writer)
-                throws WriteExcelException;
+        default public void handleCellValue(String property, Object value, T data, AbstractExcelWriter<T> writer)
+                throws WriteExcelException {}
+
+        /**
+         * 向Excel里写入一行前的回调(写入行前置回调)
+         *
+         * @param data              该行数据
+         * @param currentRowInSheet 当前sheet行坐标
+         * @param currentSheet      当前sheet
+         * @param writer            当前{@link AbstractExcelWriter}实现类对象
+         * @return true表示在调用完该回调之后还会自动在 {@link #currentRowInSheet} 行坐标下写入该行数据,false则不会再自动写入该行数据
+         */
+        default public boolean beforeWritePerRow(T data, int currentRowInSheet, Sheet currentSheet,
+                                                 AbstractExcelWriter<T> writer) {return true;}
+
+        /**
+         * 向Excel里写入一行后的回调(写入行后置回调),此回调需要在 {@link #beforeWritePerRow} 返回true时才会有效
+         *
+         * @param data              该行数据
+         * @param currentRowInSheet 当前sheet行坐标
+         * @param currentSheet      当前sheet
+         * @param writer            当前{@link AbstractExcelWriter}实现类对象
+         */
+        default public void afterWritePerRow(T data, int currentRowInSheet, Sheet currentSheet,
+                                             AbstractExcelWriter<T> writer) {}
     }
 }

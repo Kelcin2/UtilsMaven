@@ -228,9 +228,9 @@ public class ExcelWriterTest {
         excelWriter.setProperties(CommonUtils
                 .arrayToList(new String[]{"stringType", "charType", "calendarType", "booleanType", "nullType"}));
         excelWriter.setTitles(CommonUtils.arrayToList(new String[]{"字符串类型", "字符类型", "日期类型", "布尔类型", "空值类型"}));
-        excelWriter.setHandleRowReserved(new AbstractExcelWriter.HandleRowReserved<TestObj>() {
+        excelWriter.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
             @Override
-            public void callback(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
                 Cell cell = sheet.createRow(0).createCell(0);
                 CellStyle cellStyle = writer.createCellStyle();
@@ -246,11 +246,10 @@ public class ExcelWriterTest {
                 cell.setCellStyle(cellStyle);
                 cell.setCellValue("this is TEST!");
             }
-        });
-        excelWriter.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
+
             @Override
-            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
-                    throws WriteExcelException {
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
@@ -301,9 +300,9 @@ public class ExcelWriterTest {
         excelWriter1.setExcludeProps(CommonUtils.arrayToList(
                 new String[]{"dateType", "byteType", "shortType", "integerType", "longType", "floatType", "nullType",
                         "doubleType"}));
-        excelWriter1.setHandleRowReserved(new AbstractExcelWriter.HandleRowReserved<TestObj>() {
+        excelWriter1.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
             @Override
-            public void callback(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
                 Cell cell = sheet.createRow(0).createCell(0);
                 CellStyle cellStyle = writer.createCellStyle();
@@ -319,11 +318,10 @@ public class ExcelWriterTest {
                 cell.setCellStyle(cellStyle);
                 cell.setCellValue("this is TEST!");
             }
-        });
-        excelWriter1.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
+
             @Override
-            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
-                    throws WriteExcelException {
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());

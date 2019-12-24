@@ -5,10 +5,14 @@ import com.github.flyinghe.domain.TestObj;
 import com.github.flyinghe.exception.WriteExcelException;
 import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.XLSXWriter;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.junit.Test;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -219,7 +223,7 @@ public class XLSXWriterTest {
 
     /**
      * 功能测试:
-     * 测试properties，excludeProps，titles参数以及回调
+     * 测试properties，excludeProps，titles参数以及handleRowReserved,handleCellValue回调
      */
     @Test
     public void test5() throws WriteExcelException {
@@ -228,9 +232,9 @@ public class XLSXWriterTest {
         xlsxWriter.setProperties(CommonUtils
                 .arrayToList(new String[]{"stringType", "charType", "calendarType", "booleanType", "nullType"}));
         xlsxWriter.setTitles(CommonUtils.arrayToList(new String[]{"字符串类型", "字符类型", "日期类型", "布尔类型", "空值类型"}));
-        xlsxWriter.setHandleRowReserved(new AbstractExcelWriter.HandleRowReserved<TestObj>() {
+        xlsxWriter.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
             @Override
-            public void callback(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
                 Cell cell = sheet.createRow(0).createCell(0);
                 CellStyle cellStyle = writer.createCellStyle();
@@ -246,11 +250,10 @@ public class XLSXWriterTest {
                 cell.setCellStyle(cellStyle);
                 cell.setCellValue("this is TEST!");
             }
-        });
-        xlsxWriter.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
+
             @Override
-            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
-                    throws WriteExcelException {
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
@@ -301,9 +304,9 @@ public class XLSXWriterTest {
         xlsxWriter1.setExcludeProps(CommonUtils.arrayToList(
                 new String[]{"dateType", "byteType", "shortType", "integerType", "longType", "floatType", "nullType",
                         "doubleType"}));
-        xlsxWriter1.setHandleRowReserved(new AbstractExcelWriter.HandleRowReserved<TestObj>() {
+        xlsxWriter1.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
             @Override
-            public void callback(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
                 Cell cell = sheet.createRow(0).createCell(0);
                 CellStyle cellStyle = writer.createCellStyle();
@@ -319,11 +322,10 @@ public class XLSXWriterTest {
                 cell.setCellStyle(cellStyle);
                 cell.setCellValue("this is TEST!");
             }
-        });
-        xlsxWriter1.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
+
             @Override
-            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
-                    throws WriteExcelException {
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
@@ -368,6 +370,7 @@ public class XLSXWriterTest {
                 }
             }
         });
+
         xlsxWriter1.write(this.getDomainDatas(200, true)).endWrite(this.file3);
         System.out.println(xlsxWriter1.getAllSheetInExcel());
         System.out.println(xlsxWriter1.getRealDataInExcel());
@@ -376,22 +379,19 @@ public class XLSXWriterTest {
     }
 
     /**
-     * 大数据测试
+     * 功能测试:
+     * 测试properties，excludeProps，titles参数以及handleRowReserved,handleCellValue回调
      */
     @Test
     public void test6() throws WriteExcelException {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        System.out.println(String.format("========================开始写入(%s)========================",
-                dateFormat.format(new Date())));
-        long s = System.currentTimeMillis();
         XLSXWriter<TestObj> xlsxWriter =
-                new XLSXWriter<>(true, true, -1, 3, true, "yyyy|MM|dd HH|mm|ss");
+                new XLSXWriter<>(true, true, 5, 3, true, null);
         xlsxWriter.setProperties(CommonUtils
                 .arrayToList(new String[]{"stringType", "charType", "calendarType", "booleanType", "nullType"}));
         xlsxWriter.setTitles(CommonUtils.arrayToList(new String[]{"字符串类型", "字符类型", "日期类型", "布尔类型", "空值类型"}));
-        xlsxWriter.setHandleRowReserved(new AbstractExcelWriter.HandleRowReserved<TestObj>() {
+        xlsxWriter.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
             @Override
-            public void callback(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
                 Cell cell = sheet.createRow(0).createCell(0);
                 CellStyle cellStyle = writer.createCellStyle();
@@ -407,11 +407,220 @@ public class XLSXWriterTest {
                 cell.setCellStyle(cellStyle);
                 cell.setCellValue("this is TEST!");
             }
-        });
-        xlsxWriter.setHandleCellValue(new AbstractExcelWriter.HandleCellValue<TestObj>() {
+
             @Override
-            public void callback(String property, Object value, TestObj data, AbstractExcelWriter<TestObj> writer)
-                    throws WriteExcelException {
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+                if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
+                    CellStyle cellStyle = writer.createCellStyle();
+                    cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
+                    cellStyle.setFillForegroundColor(IndexedColors.SEA_GREEN.getIndex());
+                    cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                    writer.getCellStylePool().put("booleanTypeTrue", cellStyle);
+                }
+                if (!writer.getCellStylePool().containsKey("booleanTypeFalse")) {
+                    CellStyle cellStyle = writer.createCellStyle();
+                    cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
+                    cellStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+                    cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                    writer.getCellStylePool().put("booleanTypeFalse", cellStyle);
+                }
+                if (null == value) {
+                    return;
+                }
+                if ("booleanType".equals(property)) {
+                    if ((boolean) value) {
+                        writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
+                        writer.putCellValueToMap("合格");
+                    } else {
+                        writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeFalse"));
+                        writer.putCellValueToMap("不合格");
+                    }
+                }
+                if ("calendarType".equals(property)) {
+                    writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
+                    writer.putCellValueToMap(
+                            new SimpleDateFormat("[yyyy][MM][dd]").format(((Calendar) value).getTime()));
+                }
+                if ("nullType".equals(property)) {
+                    writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
+                }
+            }
+        });
+        xlsxWriter.write(this.getDomainDatas(200, true)).endWrite(this.file1);
+        System.out.println(xlsxWriter.getAllSheetInExcel());
+        System.out.println(xlsxWriter.getRealDataInExcel());
+        System.out.println(xlsxWriter.getRealRowInExcel());
+
+        /*************************************************************************************************/
+
+        XLSXWriter<TestObj> xlsxWriter1 =
+                new XLSXWriter<>(true, true, 50, 3, true, null);
+        xlsxWriter1.setProperties(CommonUtils
+                .arrayToList(new String[]{"stringType", "charType", "calendarType", "booleanType", "nullType"}));
+        xlsxWriter1.setExcludeProps(CommonUtils.arrayToList(
+                new String[]{"dateType", "byteType", "shortType", "integerType", "longType", "floatType", "nullType",
+                        "doubleType"}));
+        xlsxWriter1.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
+            @Override
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+                int sheetIndex = writer.getWorkbook().getSheetIndex(sheet);
+                writer.getWorkbook().setSheetName(sheetIndex, String.format("工作簿%d", sheetIndex + 1));
+                sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
+                Cell cell = sheet.createRow(0).createCell(0);
+                CellStyle cellStyle = writer.createCellStyle();
+                Font font = writer.createFont();
+                font.setBold(true);
+                font.setFontHeightInPoints((short) 20);
+                font.setColor(IndexedColors.WHITE.getIndex());
+                cellStyle.setFont(font);
+                cellStyle.setAlignment(HorizontalAlignment.CENTER);
+                cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+                cellStyle.setFillForegroundColor(IndexedColors.SEA_GREEN.getIndex());
+                cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                cell.setCellStyle(cellStyle);
+                cell.setCellValue("this is TEST!");
+            }
+
+            @Override
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+                if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
+                    CellStyle cellStyle = writer.createCellStyle();
+                    cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
+                    cellStyle.setFillForegroundColor(IndexedColors.SEA_GREEN.getIndex());
+                    cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                    writer.getCellStylePool().put("booleanTypeTrue", cellStyle);
+                }
+                if (!writer.getCellStylePool().containsKey("booleanTypeFalse")) {
+                    CellStyle cellStyle = writer.createCellStyle();
+                    cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
+                    cellStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+                    cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                    writer.getCellStylePool().put("booleanTypeFalse", cellStyle);
+                }
+                if ("booleanType".equals(property)) {
+                    if (null == value) {
+                        return;
+                    }
+                    if ((boolean) value) {
+                        writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
+                        writer.putCellValueToMap("合格");
+                    } else {
+                        writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeFalse"));
+                        writer.putCellValueToMap("不合格");
+                    }
+                }
+                if ("calendarType".equals(property)) {
+                    if (null == value) {
+                        return;
+                    }
+                    writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
+                    writer.putCellValueToMap(
+                            new SimpleDateFormat("[yyyy][MM][dd]").format(((Calendar) value).getTime()));
+                }
+                if ("nullType".equals(property)) {
+                    if (null == value) {
+                        writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeFalse"));
+                        writer.putCellValueToMap("空值");
+                    } else {
+                        writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
+                    }
+                }
+            }
+
+            @Override
+            public boolean beforeWritePerRow(TestObj data, int currentRowInSheet, Sheet currentSheet,
+                                             AbstractExcelWriter<TestObj> writer) {
+                if (null == data.getBooleanType() || data.getBooleanType()) {
+                    return true;
+                }
+                if (!writer.getCellStylePool().containsKey("booleanTypeFalse")) {
+                    CellStyle cellStyle = writer.createCellStyle();
+                    cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
+                    cellStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+                    cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                    writer.getCellStylePool().put("booleanTypeFalse", cellStyle);
+                }
+
+                if (writer.isBlankLastRow()) {
+                    currentRowInSheet -= 1;
+                }
+                currentSheet.addMergedRegion(new CellRangeAddress(currentRowInSheet + 1, currentRowInSheet + 2, 3, 3));
+                currentSheet.addMergedRegion(new CellRangeAddress(currentRowInSheet + 1, currentRowInSheet + 2, 2, 2));
+                Row row = currentSheet.createRow(currentRowInSheet + 1);
+
+                writer.createCell(row, 0, writer.getDefaultCellStyle()).setCellValue(data.getStringType());
+
+                writer.createCell(row, 1, writer.getDefaultCellStyle()).setCellValue(data.getCharType());
+
+                writer.createCell(row, 2, writer.getCellStylePool().get("booleanTypeFalse"))
+                        .setCellValue(DateFormatUtils.format(data.getCalendarType(), AbstractExcelWriter.DATE_PATTERN));
+
+                writer.createCell(row, 3, writer.getCellStylePool().get("booleanTypeFalse")).setCellValue("不合格");
+
+                try {
+                    ClientAnchor anchor =
+                            writer.getCurrentPatriarch()
+                                    .createAnchor(0, 0, 0, 0, 4, currentRowInSheet + 1, 5, currentRowInSheet + 3);
+                    anchor.setAnchorType(ClientAnchor.AnchorType.DONT_MOVE_AND_RESIZE);
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    BufferedImage bi = ImageIO.read(new File("C:\\Users\\FlyingHe\\Desktop\\test.jpg"));
+                    ImageIO.write(bi, "jpeg", bos);
+                    writer.getCurrentPatriarch().createPicture(anchor,
+                            writer.getWorkbook().addPicture(bos.toByteArray(), Workbook.PICTURE_TYPE_JPEG));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                writer.next(writer.isBlankLastRow() ? 1 : 2);
+                return false;
+            }
+        });
+
+        xlsxWriter1.write(this.getDomainDatas(200, true)).endWrite(this.file3);
+        System.out.println(xlsxWriter1.getAllSheetInExcel());
+        System.out.println(xlsxWriter1.getRealDataInExcel());
+        System.out.println(xlsxWriter1.getRealRowInExcel());
+
+    }
+
+    /**
+     * 大数据测试
+     */
+    @Test
+    public void test7() throws WriteExcelException {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        System.out.println(String.format("========================开始写入(%s)========================",
+                dateFormat.format(new Date())));
+        long s = System.currentTimeMillis();
+        XLSXWriter<TestObj> xlsxWriter =
+                new XLSXWriter<>(true, true, -1, 3, true, "yyyy|MM|dd HH|mm|ss");
+        xlsxWriter.setProperties(CommonUtils
+                .arrayToList(new String[]{"stringType", "charType", "calendarType", "booleanType", "nullType"}));
+        xlsxWriter.setTitles(CommonUtils.arrayToList(new String[]{"字符串类型", "字符类型", "日期类型", "布尔类型", "空值类型"}));
+        xlsxWriter.setWriteExcelCallback(new AbstractExcelWriter.WriteExcelCallback<TestObj>() {
+            @Override
+            public void handleRowReserved(Sheet sheet, AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+                sheet.addMergedRegion(new CellRangeAddress(0, 2, 0, 4));
+                Cell cell = sheet.createRow(0).createCell(0);
+                CellStyle cellStyle = writer.createCellStyle();
+                Font font = writer.createFont();
+                font.setBold(true);
+                font.setFontHeightInPoints((short) 20);
+                font.setColor(IndexedColors.WHITE.getIndex());
+                cellStyle.setFont(font);
+                cellStyle.setAlignment(HorizontalAlignment.CENTER);
+                cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+                cellStyle.setFillForegroundColor(IndexedColors.SEA_GREEN.getIndex());
+                cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+                cell.setCellStyle(cellStyle);
+                cell.setCellValue("this is TEST!");
+            }
+
+            @Override
+            public void handleCellValue(String property, Object value, TestObj data,
+                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
