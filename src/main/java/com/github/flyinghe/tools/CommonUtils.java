@@ -117,8 +117,15 @@ public class CommonUtils {
         if (obj == null) {
             return null;
         }
+        Class objClazz = obj.getClass();
+        while (null != objClazz) {
+            if (objClazz.equals(clazz)) {
+                return (T) obj;
+            }
+            objClazz = objClazz.getSuperclass();
+        }
         if (!(obj instanceof Map)) {
-            throw new Exception("obj必须为java.util.Map类型");
+            throw new Exception("obj必须为java.util.Map类型或者clazz类型的子类");
         }
         T bean = null;
         bean = clazz.newInstance();
@@ -222,9 +229,9 @@ public class CommonUtils {
             throw new Exception("obj必须为java.util.List类型");
         }
         List<T> result = new ArrayList<>();
-        List<Map<String, Object>> objList = (List<Map<String, Object>>) obj;
+        List objList = (List) obj;
         if (CollectionUtils.isNotEmpty(objList)) {
-            for (Map<String, Object> map : objList) {
+            for (Object map : objList) {
                 T bean = mapToBean(map, clazz);
                 if (null != bean) {
                     result.add(bean);

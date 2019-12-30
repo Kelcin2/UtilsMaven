@@ -132,6 +132,12 @@ public abstract class AbstractExcelWriter<T> {
      * @see #CELL_VALUE
      */
     private Map<String, Object> map = null;
+
+    /**
+     * 变量池,用于记录一些全局范围内的变量,一般用于向Excel中写入在{@link #datas}数据中不存在的属性值,
+     * 一般配合{@link #map}使用
+     */
+    private Map<String, Object> varPool = null;
     /******************************************************************************************************/
     /**
      * 是否写入标题,注意,若为false则titles即便为不null也不会写入标题,
@@ -311,6 +317,35 @@ public abstract class AbstractExcelWriter<T> {
             this.currentPatriarch = this.currentSheet.createDrawingPatriarch();
         }
         return this.currentPatriarch;
+    }
+
+    /**
+     * 获取变量池
+     *
+     * @return 变量池
+     * @see #varPool
+     */
+    public Map<String, Object> getVarPool() {
+        if (null == this.varPool) {
+            this.varPool = new HashMap<>();
+        }
+        return this.varPool;
+    }
+
+    /**
+     * 从变量池中获取一个指定key的变量值
+     *
+     * @param key   指定key
+     * @param clazz 该值类型
+     * @param <V>   泛型
+     * @return 返回从变量池中获取到的一个指定key的变量值
+     * @see #varPool
+     */
+    public <V> V getVarPool(String key, Class<V> clazz) {
+        if (null == this.varPool) {
+            return null;
+        }
+        return (V) this.varPool.get(key);
     }
 
     /**
@@ -874,12 +909,15 @@ public abstract class AbstractExcelWriter<T> {
     /**
      * 给一个Cell赋值,若为null则视为"",若不为基本类型及其包装类(日期类型除外),则其值通过toString()获取
      *
-     * @param cell     一个单元格
-     * @param value    值
-     * @param property 属性名,即列名
+     * @param cell       一个单元格
+     * @param value      值
+     * @param property   属性名,即列名
+     * @param blankFixed 标志此单元格是否被固定认定为空单元格,true表示该单元格固定为空单元格,false表示该单元格固定为非空单元格,
+     *                   若该参数为null,则使用默认的空单元格判定方法来判定该单元格是否为空单元格
      * @return 若此单元格写入空数据则返回true, 否则返回false
      */
-    private boolean setCellValue(Cell cell, Object value, String property) throws WriteExcelException {
+    private boolean setCellValue(Cell cell, Object value, String property, Boolean blankFixed)
+            throws WriteExcelException {
         boolean isBlankCell = false;
         if (value == null) {
             cell.setCellValue("");
@@ -906,7 +944,7 @@ public abstract class AbstractExcelWriter<T> {
                 if (valueMapping instanceof Boolean) {
                     throw new WriteExcelException(String.format("[%s]属性的boolean映射值类型不能再是boolean", property));
                 }
-                isBlankCell = this.setCellValue(cell, valueMapping, property);
+                isBlankCell = this.setCellValue(cell, valueMapping, property, blankFixed);
             } else {
                 cell.setCellValue((Boolean) value);
             }
@@ -925,7 +963,7 @@ public abstract class AbstractExcelWriter<T> {
         } else {
             cell.setCellValue(value.toString());
         }
-        return isBlankCell;
+        return null == blankFixed ? isBlankCell : blankFixed;
     }
 
     /**
@@ -941,27 +979,26 @@ public abstract class AbstractExcelWriter<T> {
         int currenCol = -1;
         for (String property : this.properties) {
             currenCol++;
-            if (data.containsKey(property)) {
-                Cell cell = row.createCell(currenCol);
-                if (this.writeExcelCallback != null) {
-                    this.map.clear();
-                    this.writeExcelCallback.handleCellValue(property, data.get(property), originData, this);
-                }
-                CellStyle cellStyleTemp = this.defaultCellStyle;
-                Object value = data.get(property);
-                if (MapUtils.isNotEmpty(this.cellStyleMapping) && this.cellStyleMapping.containsKey(property)) {
-                    cellStyleTemp = this.cellStyleMapping.get(property);
-                }
-                if (MapUtils.isNotEmpty(this.map)) {
-                    if (this.map.get(CELL_STYLE) instanceof CellStyle) {
-                        cellStyleTemp = (CellStyle) this.map.get(CELL_STYLE);
-                    }
-                    value = this.map.getOrDefault(CELL_VALUE, value);
-                }
+            Cell cell = row.createCell(currenCol);
+            Boolean blankFixed = null;
+            if (this.writeExcelCallback != null) {
+                this.map.clear();
+                blankFixed = this.writeExcelCallback.handleCellValue(property, data.get(property), originData, this);
+            }
+            CellStyle cellStyleTemp = this.defaultCellStyle;
+            Object value = data.get(property);
+            if (MapUtils.isNotEmpty(this.cellStyleMapping) && this.cellStyleMapping.containsKey(property)) {
+                cellStyleTemp = this.cellStyleMapping.get(property);
+            }
+            if (MapUtils.isNotEmpty(this.map)) {
+                cellStyleTemp = (CellStyle) this.map.getOrDefault(CELL_STYLE, cellStyleTemp);
+                value = this.map.getOrDefault(CELL_VALUE, value);
+            }
+            if (null != cellStyleTemp) {
                 cell.setCellStyle(cellStyleTemp);
-                if (!this.setCellValue(cell, value, property)) {
-                    isNotBlankRow = true;
-                }
+            }
+            if (!this.setCellValue(cell, value, property, blankFixed)) {
+                isNotBlankRow = true;
             }
         }
         return isNotBlankRow;
@@ -972,17 +1009,28 @@ public abstract class AbstractExcelWriter<T> {
      *
      * @return 若需要初始化则返回true, 反之false
      */
-    private boolean needInitSheet() {
+    private boolean needInitSheet() throws WriteExcelException {
         if (null == this.currentSheet) {
             //证明是第一页,肯定需要初始化
             return true;
         }
         //标识即将写入的下一行的行标
         int nextRowIndex = this.currentRowInSheet;
-        if (!this.isBlankLastRow || (this.isBlankLastRow && !this.isSkipBlankRow)) {
+        if (!this.isBlankLastRow || !this.isSkipBlankRow) {
             nextRowIndex++;
         }
-        return nextRowIndex >= this.allowMaxRows;
+        boolean needInitSheet = nextRowIndex >= this.allowMaxRows;
+
+        if (0 >= this.limit && !needInitSheet && null != this.writeExcelCallback) {
+            //此种情况表示未达到强制换页,若配置了手动换页则调用手动换页回调
+            Boolean formFeedManually =
+                    this.writeExcelCallback.formFeedManually(this.currentRowInSheet, this.currentSheet, this);
+            if (null != formFeedManually) {
+                needInitSheet = formFeedManually;
+            }
+        }
+
+        return needInitSheet;
     }
 
     /**
@@ -1004,6 +1052,8 @@ public abstract class AbstractExcelWriter<T> {
         this.allSheetInExcel++;
         this.currentRowInSheet = this.startRowIndex - 1;
         this.currentPatriarch = null;
+        this.isBlankLastRow = false;
+        this.lastRow = null;
         //预留行回调
         if (null != this.writeExcelCallback && this.rowNumReserved >= 0) {
             this.writeExcelCallback.handleRowReserved(this.currentSheet, this);
@@ -1048,7 +1098,8 @@ public abstract class AbstractExcelWriter<T> {
         }
         //写入行前置回调
         if (null != this.writeExcelCallback &&
-                !this.writeExcelCallback.beforeWritePerRow(data, this.currentRowInSheet, this.currentSheet, this)) {
+                !this.writeExcelCallback
+                        .beforeWritePerRow(data, this.currentRowInSheet, this.lastRow, this.currentSheet, this)) {
             return;
         }
         //将data转换成Map数据结构
@@ -1059,7 +1110,7 @@ public abstract class AbstractExcelWriter<T> {
             mapBean = CommonUtils.toMap(data);
         }
         Row rowTemp = null;
-        if (!this.isBlankLastRow || (this.isBlankLastRow && !this.isSkipBlankRow)) {
+        if (!this.isBlankLastRow || !this.isSkipBlankRow) {
             //下移一行
             this.currentRowInSheet++;
             rowTemp = this.currentSheet.createRow(this.currentRowInSheet);
@@ -1082,7 +1133,7 @@ public abstract class AbstractExcelWriter<T> {
         }
         //写入行后置回调
         if (null != this.writeExcelCallback) {
-            this.writeExcelCallback.afterWritePerRow(data, this.currentRowInSheet, this.currentSheet, this);
+            this.writeExcelCallback.afterWritePerRow(data, this.currentRowInSheet, rowTemp, this.currentSheet, this);
         }
     }
 
@@ -1167,6 +1218,19 @@ public abstract class AbstractExcelWriter<T> {
      */
     public interface WriteExcelCallback<T> {
         /**
+         * 手动换页回调,只有当{@link #limit}&lt;=0并且没有超出{@link #allowMaxRows}限制时有效,
+         * 即第一页或者开启了{@link #limit}限制或者数据达到Excel规定最大值时,此方法不会生效,因为这三种情况会被强制换页
+         *
+         * @param currentRowInSheet 当前sheet行坐标
+         * @param currentSheet      当前sheet(换页前的Sheet)
+         * @param writer            当前{@link AbstractExcelWriter}实现类对象
+         * @return 若为null表示使用默认判断换页流程, 若为true表示换页, false表示不换页
+         */
+        default public Boolean formFeedManually(int currentRowInSheet, Sheet currentSheet,
+                                                AbstractExcelWriter<T> writer)
+                throws WriteExcelException { return null; }
+
+        /**
          * 当写入每个Sheet的预留行时调用,你可以使用此回调对预留行的内容进行自定义
          *
          * @param sheet  当前正在写入的Sheet
@@ -1175,7 +1239,21 @@ public abstract class AbstractExcelWriter<T> {
         default public void handleRowReserved(Sheet sheet, AbstractExcelWriter<T> writer) throws WriteExcelException {}
 
         /**
-         * 当在设置数据单元格的值时调用,你可以使用此回调来修改即将写入单元格的值,
+         * 向Excel里写入一行前的回调(写入行前置回调)
+         *
+         * @param data              该行数据
+         * @param currentRowInSheet 当前sheet行坐标(实际上是上一行的行坐标)
+         * @param lastRow           当{@link #isBlankLastRow}返回true时才会有值,表示上一行的行对象
+         * @param currentSheet      当前sheet
+         * @param writer            当前{@link AbstractExcelWriter}实现类对象
+         * @return true表示在调用完该回调之后还会自动在 {@link #currentRowInSheet} 行坐标下写入该行数据,false则不会再自动写入该行数据
+         */
+        default public boolean beforeWritePerRow(T data, int currentRowInSheet, Row lastRow, Sheet currentSheet,
+                                                 AbstractExcelWriter<T> writer)
+                throws WriteExcelException {return true;}
+
+        /**
+         * 此回调需要在 {@link #beforeWritePerRow} 返回true时才会有效,当在设置数据单元格的值时调用,你可以使用此回调来修改即将写入单元格的值,
          * 同时你也可以通过传入的cellStyle来修改此单元格的样式。
          * 需要注意的是:若你需要修改即将写入单元格的值或者样式,你需要将修改后的值或者样式cellStyle对象通过
          * {@link #putCellValueToMap(Object)}和
@@ -1187,35 +1265,28 @@ public abstract class AbstractExcelWriter<T> {
          * @param data     该行数据
          * @param writer   当前{@link AbstractExcelWriter}实现类对象,可以使用此对象获取{@link CellStyle}和{@link org.apache.poi.ss.usermodel.Font}对象,
          *                 自定义的cellStyle需要放入{@link #cellStylePool}中以便复用,因为POI对cellStyle对象的创建数量有限制
+         * @return 若为null则表示该单元格空值判定方法采用默认方式,
+         * 反之使用指定的布尔值来判断该单元格是否为空单元格(true表示该单元格固定为空单元格,false表示该单元格固定为非空单元格)
          * @see #CELL_VALUE
          * @see #CELL_STYLE
          * @see #cellStylePool
          * @see #map
          */
-        default public void handleCellValue(String property, Object value, T data, AbstractExcelWriter<T> writer)
-                throws WriteExcelException {}
+        default public Boolean handleCellValue(String property, Object value, T data, AbstractExcelWriter<T> writer)
+                throws WriteExcelException {return null;}
 
-        /**
-         * 向Excel里写入一行前的回调(写入行前置回调)
-         *
-         * @param data              该行数据
-         * @param currentRowInSheet 当前sheet行坐标
-         * @param currentSheet      当前sheet
-         * @param writer            当前{@link AbstractExcelWriter}实现类对象
-         * @return true表示在调用完该回调之后还会自动在 {@link #currentRowInSheet} 行坐标下写入该行数据,false则不会再自动写入该行数据
-         */
-        default public boolean beforeWritePerRow(T data, int currentRowInSheet, Sheet currentSheet,
-                                                 AbstractExcelWriter<T> writer) {return true;}
 
         /**
          * 向Excel里写入一行后的回调(写入行后置回调),此回调需要在 {@link #beforeWritePerRow} 返回true时才会有效
          *
          * @param data              该行数据
          * @param currentRowInSheet 当前sheet行坐标
+         * @param currentRow        当前行对象
          * @param currentSheet      当前sheet
          * @param writer            当前{@link AbstractExcelWriter}实现类对象
          */
-        default public void afterWritePerRow(T data, int currentRowInSheet, Sheet currentSheet,
-                                             AbstractExcelWriter<T> writer) {}
+        default public void afterWritePerRow(T data, int currentRowInSheet, Row currentRow, Sheet currentSheet,
+                                             AbstractExcelWriter<T> writer) throws WriteExcelException {}
+
     }
 }

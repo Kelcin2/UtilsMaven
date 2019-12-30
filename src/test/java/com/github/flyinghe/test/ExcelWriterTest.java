@@ -248,8 +248,8 @@ public class ExcelWriterTest {
             }
 
             @Override
-            public void handleCellValue(String property, Object value, TestObj data,
-                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public Boolean handleCellValue(String property, Object value, TestObj data,
+                                           AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
@@ -265,7 +265,7 @@ public class ExcelWriterTest {
                     writer.getCellStylePool().put("booleanTypeFalse", cellStyle);
                 }
                 if (null == value) {
-                    return;
+                    return null;
                 }
                 if ("booleanType".equals(property)) {
                     if ((boolean) value) {
@@ -284,6 +284,7 @@ public class ExcelWriterTest {
                 if ("nullType".equals(property)) {
                     writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
                 }
+                return null;
             }
         });
         excelWriter.write(this.getDomainDatas(200, true)).endWrite(this.file1);
@@ -320,8 +321,8 @@ public class ExcelWriterTest {
             }
 
             @Override
-            public void handleCellValue(String property, Object value, TestObj data,
-                                        AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
+            public Boolean handleCellValue(String property, Object value, TestObj data,
+                                           AbstractExcelWriter<TestObj> writer) throws WriteExcelException {
                 if (!writer.getCellStylePool().containsKey("booleanTypeTrue")) {
                     CellStyle cellStyle = writer.createCellStyle();
                     cellStyle.cloneStyleFrom(writer.getDefaultCellStyle());
@@ -338,7 +339,7 @@ public class ExcelWriterTest {
                 }
                 if ("booleanType".equals(property)) {
                     if (null == value) {
-                        return;
+                        return null;
                     }
                     if ((boolean) value) {
                         writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
@@ -350,7 +351,7 @@ public class ExcelWriterTest {
                 }
                 if ("calendarType".equals(property)) {
                     if (null == value) {
-                        return;
+                        return null;
                     }
                     writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
                     writer.putCellValueToMap(
@@ -364,6 +365,7 @@ public class ExcelWriterTest {
                         writer.putCellStyleToMap(writer.getCellStylePool().get("booleanTypeTrue"));
                     }
                 }
+                return null;
             }
         });
         excelWriter1.write(this.getDomainDatas(200, true)).endWrite(this.file3);

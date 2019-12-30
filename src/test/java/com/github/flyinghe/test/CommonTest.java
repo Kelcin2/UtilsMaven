@@ -121,6 +121,17 @@ public class CommonTest {
             }});
         }}, Person.class);
         System.out.println(person);
+
+        Person person1 = CommonUtils.mapToBean(new Person() {{
+            this.setAge(111);
+            this.setAddress("成都市天府广场");
+            this.setBirthday(new Date());
+            this.setBirthdaies(new ArrayList<Date>() {{
+                add(new Date());
+                add(new Date());
+            }});
+        }}, Person.class);
+        System.out.println(person1);
     }
 
     @Test
