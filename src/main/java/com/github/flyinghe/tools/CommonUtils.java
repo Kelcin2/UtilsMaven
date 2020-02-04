@@ -5,6 +5,7 @@ import com.github.flyinghe.tools.date.DateUtils;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.ReflectionUtils;
@@ -87,6 +88,37 @@ public class CommonUtils {
         return objectMapper.readValue(objectMapper.writeValueAsString(bean),
                 objectMapper.getTypeFactory().constructMapType(HashMap.class, String.class, Object.class));
     }
+    /**
+     * 将一个Map转化成一个Bean,
+     * 此方法属于深度转换(无限层)。
+     * 转换模型:
+     * ------------------------
+     * bean              map
+     * ------------------------
+     * T                任意类型
+     * bean              map
+     * list:T            map
+     * list:bean         map
+     * list:T            list:map
+     * list:bean         list:map
+     * list:Date         list:String
+     * list:其他类型      list:其他类型
+     * Date              String
+     * list:Date         String
+     * list:T            其他类型
+     * list:其他类型      其他类型
+     * 其他类型           其他类型
+     * -------------------------
+     *
+     * @param obj   Map对象
+     * @param clazz 被转换成的Bean的Class对象
+     * @param <T>
+     * @return 被转化成的Bean
+     * @throws Exception
+     */
+    public static <T> T mapToBean(Object obj, Class<T> clazz) throws Exception {
+        return mapToBean(obj, clazz, null);
+    }
 
     /**
      * 将一个Map转化成一个Bean,
@@ -104,16 +136,20 @@ public class CommonUtils {
      * list:Date         list:String
      * list:其他类型      list:其他类型
      * Date              String
+     * list:Date         String
+     * list:T            其他类型
+     * list:其他类型      其他类型
      * 其他类型           其他类型
      * -------------------------
      *
      * @param obj   Map对象
      * @param clazz 被转换成的Bean的Class对象
+     * @param cbs   回调,key为需要执行回调的属性,value为该属性对应的回调对象,注:该回调仅作用于第一层属性
      * @param <T>
      * @return 被转化成的Bean
      * @throws Exception
      */
-    public static <T> T mapToBean(Object obj, Class<T> clazz) throws Exception {
+    public static <T> T mapToBean(Object obj, Class<T> clazz , Map<String , MapToBeanCB> cbs) throws Exception {
         if (obj == null) {
             return null;
         }
@@ -136,6 +172,9 @@ public class CommonUtils {
             try {
                 String key = entry.getKey();
                 Object value = entry.getValue();
+                if (MapUtils.isNotEmpty(cbs) && cbs.containsKey(key)) {
+                    value = cbs.get(key).getValue(value);
+                }
                 if (!properties.contains(key) || null == ReflectionUtils.findField(clazz, key) || null == value) {
                     continue;
                 }
@@ -146,14 +185,11 @@ public class CommonUtils {
                 } else if (value instanceof Map) {
                     Class<?> propertyClazz = ReflectionUtils.findField(clazz, key).getType();
                     if (!propertyClazz.getName().equalsIgnoreCase("java.util.List")) {
-                        PropertyUtils.setSimpleProperty(bean, key,
-                                mapToBean(value, ReflectionUtils.findField(clazz, key).getType()));
+                        PropertyUtils.setSimpleProperty(bean, key, mapToBean(value, ReflectionUtils.findField(clazz, key).getType()));
                     } else {
                         //map转list
                         //判断这个list的泛型类型
-                        Type actualTypeArgument =
-                                ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType())
-                                        .getActualTypeArguments()[0];
+                        Type actualTypeArgument = ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType()).getActualTypeArguments()[0];
                         List propertyValue = new ArrayList<>();
                         if (actualTypeArgument instanceof TypeVariable) {
                             //若该List的泛型未指定具体类型,则直接赋值
@@ -174,9 +210,7 @@ public class CommonUtils {
                     }
                     Object valueNested = values.get(0);
                     //判断这个集合元素的类型
-                    Type actualTypeArgument =
-                            ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType())
-                                    .getActualTypeArguments()[0];
+                    Type actualTypeArgument = ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType()).getActualTypeArguments()[0];
                     List propertyValue = new ArrayList<>();
                     if (actualTypeArgument instanceof TypeVariable) {
                         //若该List的泛型未指定具体类型,则直接赋值
@@ -188,8 +222,7 @@ public class CommonUtils {
                             propertyValue.add(mapToBean(values.get(i), propertyNestedClazz));
                         }
                         PropertyUtils.setSimpleProperty(bean, key, propertyValue);
-                    } else if (((Class) actualTypeArgument).getName().equalsIgnoreCase("java.util.Date") &&
-                            (valueNested instanceof String || StringUtils.isNumeric(valueNested.toString()))) {
+                    } else if (((Class) actualTypeArgument).getName().equalsIgnoreCase("java.util.Date") && (valueNested instanceof String || StringUtils.isNumeric(valueNested.toString()))) {
                         for (int i = 0; i < values.size(); i++) {
                             propertyValue.add(DateUtils.strToDate(values.get(i).toString()));
                         }
@@ -197,10 +230,17 @@ public class CommonUtils {
                     } else {
                         PropertyUtils.setSimpleProperty(bean, key, values);
                     }
-                } else if (
-                        ReflectionUtils.findField(clazz, key).getType().getName().equalsIgnoreCase("java.util.Date") &&
-                                (value instanceof String || StringUtils.isNumeric(value.toString()))) {
+                } else if (ReflectionUtils.findField(clazz, key).getType().getName().equalsIgnoreCase("java.util.Date") && (value instanceof String || StringUtils.isNumeric(value.toString()))) {
                     PropertyUtils.setSimpleProperty(bean, key, DateUtils.strToDate(value.toString()));
+                } else if(ReflectionUtils.findField(clazz, key).getType().getName().equalsIgnoreCase("java.util.List")){
+                    Type actualTypeArgument = ((ParameterizedType) ReflectionUtils.findField(clazz, key).getGenericType()).getActualTypeArguments()[0];
+                    List propertyValue = new ArrayList<>();
+                    if (actualTypeArgument instanceof Class && ((Class) actualTypeArgument).getName().equalsIgnoreCase("java.util.Date") && (value instanceof String || StringUtils.isNumeric(value.toString()))) {
+                        propertyValue.add(DateUtils.strToDate(value.toString()));
+                    } else {
+                        propertyValue.add(value);
+                    }
+                    PropertyUtils.setSimpleProperty(bean, key, propertyValue);
                 } else {
                     BeanUtils.setProperty(bean, key, value);
                 }
@@ -209,6 +249,21 @@ public class CommonUtils {
             }
         }
         return bean;
+    }
+
+    /**
+     * 用于调用{@link #mapToBean(Object, Class, Map)}时的回调
+     */
+    public static interface MapToBeanCB {
+        /**
+         * 返回一个经过手动处理的value值
+         *
+         * @param value 原始value值
+         * @return 返回一个经过手动处理的value值
+         */
+        public default Object getValue(Object value) {
+            return value;
+        }
     }
 
     /**
@@ -222,6 +277,21 @@ public class CommonUtils {
      * @see CommonUtils#mapToBean(Object, Class)
      */
     public static <T> List<T> listToBean(Object obj, Class<T> clazz) throws Exception {
+        return listToBean(obj, clazz, null);
+    }
+
+    /**
+     * 将一个List转化成包含具体Bean的List并返回
+     *
+     * @param obj   List对象
+     * @param clazz 最终返回List的元素Class对象
+     * @param cbs   回调,key为需要执行回调的属性,value为该属性对应的回调对象,注:该回调仅作用于第一层属性
+     * @param <T>
+     * @return
+     * @throws Exception
+     * @see CommonUtils#mapToBean(Object, Class)
+     */
+    public static <T> List<T> listToBean(Object obj, Class<T> clazz, Map<String, MapToBeanCB> cbs) throws Exception {
         if (obj == null) {
             return null;
         }
@@ -232,7 +302,7 @@ public class CommonUtils {
         List objList = (List) obj;
         if (CollectionUtils.isNotEmpty(objList)) {
             for (Object map : objList) {
-                T bean = mapToBean(map, clazz);
+                T bean = mapToBean(map, clazz, cbs);
                 if (null != bean) {
                     result.add(bean);
                 }

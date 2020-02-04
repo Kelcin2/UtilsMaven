@@ -56,7 +56,7 @@ public class XLSXWriter<T> extends AbstractExcelWriter<T> {
     public XLSXWriter(boolean isWriteTitle, int limit, int rowNumReserved, boolean isCompressTempFiles,
                       String dateFormat)
             throws WriteExcelException {
-        this(isWriteTitle, true, limit, rowNumReserved, true, dateFormat);
+        this(isWriteTitle, true, limit, rowNumReserved, isCompressTempFiles, dateFormat);
     }
 
     /**

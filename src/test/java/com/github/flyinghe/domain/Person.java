@@ -12,6 +12,15 @@ public class Person {
     private String address;
     private Date birthday;
     private List<Date> birthdaies;
+    private List<Integer> ins;
+
+    public List<Integer> getIns() {
+        return ins;
+    }
+
+    public void setIns(List<Integer> ins) {
+        this.ins = ins;
+    }
 
     public Person(Integer age, String address) {
         this.age = age;

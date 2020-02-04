@@ -10,7 +10,6 @@ import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.ExcelWriter;
 import com.github.flyinghe.tools.XLSXReader;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.httpclient.methods.multipart.StringPart;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.junit.Test;
@@ -144,5 +143,32 @@ public class CommonTest {
         map.put("pet", pet);
         User user = CommonUtils.toBean(map, User.class);
         System.out.println(user);
+    }
+
+    @Test
+    public void test8() throws Exception {
+        Person person = CommonUtils.mapToBean(new HashMap<String, Object>() {{
+            this.put("birthdaies", "2020-02-04 19:09:55");
+            this.put("ins", "1,2,3,4");
+        }}, Person.class, new HashMap<String, CommonUtils.MapToBeanCB>() {{
+            this.put("ins", new CommonUtils.MapToBeanCB() {
+                @Override
+                public Object getValue(Object value) {
+                    if (null != value) {
+                        List<Integer> result = new ArrayList<>();
+                        for (String i : value.toString().split(",")) {
+                            try {
+                                result.add(Integer.valueOf(i));
+                            } catch (Exception e) {
+
+                            }
+                        }
+                        value = result;
+                    }
+                    return value;
+                }
+            });
+        }});
+        System.out.println(person);
     }
 }
