@@ -73,6 +73,18 @@ public class ExcelWriterTest {
     }
 
     /**
+     * 测试空文件
+     */
+    @Test
+    public void test0() throws Exception {
+        ExcelWriter<Map<String, Object>> writer = new ExcelWriter<>(-1, ExcelWriter.XLSX);
+        writer.setTitles(CommonUtils.arrayToList(new String[]{"姓名", "年龄"}));
+        writer.setProperties(CommonUtils.arrayToList(new String[]{"1", "2"}));
+        writer.write(new ArrayList<>());
+        writer.endWrite(file2);
+    }
+
+    /**
      * 基础测试:
      * 测试每种数据类型写入情况，两种文件类型，isWriteTitle参数
      */

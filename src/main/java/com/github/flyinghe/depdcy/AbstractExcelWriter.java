@@ -1066,7 +1066,7 @@ public abstract class AbstractExcelWriter<T> {
      * 则不会做任何操作
      */
     private void writeTitle() {
-        if (!this.isWriteTitle) {
+        if (!this.isWriteTitle || CollectionUtils.isEmpty(this.titles)) {
             return;
         }
         this.currentRowInSheet++;
@@ -1210,7 +1210,15 @@ public abstract class AbstractExcelWriter<T> {
      * @param os 该流需要手动关闭
      * @return 参考实现类
      */
-    public abstract boolean endWrite(OutputStream os);
+    public boolean endWrite(OutputStream os) {
+        if (0 >= this.workbook.getNumberOfSheets()) {
+            //若workbook是空的则至少含有一个Sheet,否则生成的文件无法打开
+            this.currentSheet = this.workbook.createSheet();
+            this.writeTitle();
+        }
+        return true;
+    }
+
 
 
     /**

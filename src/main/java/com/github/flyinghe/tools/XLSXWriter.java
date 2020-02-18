@@ -82,6 +82,9 @@ public class XLSXWriter<T> extends AbstractExcelWriter<T> {
      * 将内存中的Excel数据刷入缓存
      */
     private void flush() {
+        if (null == this.currentSheet) {
+            return;
+        }
         try {
             if (this.isSkipBlankRow && this.isBlankLastRow) {
                 //若不需要写入空行,且上一行为空行的话则保留上一行不被刷入缓存
@@ -119,6 +122,7 @@ public class XLSXWriter<T> extends AbstractExcelWriter<T> {
      */
     @Override
     public boolean endWrite(OutputStream os) {
+        super.endWrite(os);
         boolean flag = true;
         try {
             this.workbook.write(os);

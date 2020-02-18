@@ -103,6 +103,7 @@ public class ExcelWriter<T> extends AbstractExcelWriter<T> {
      */
     @Override
     public boolean endWrite(OutputStream os) {
+        super.endWrite(os);
         boolean endSuccess = false;
         try {
             this.workbook.write(os);
