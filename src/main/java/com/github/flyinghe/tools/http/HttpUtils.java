@@ -11,9 +11,7 @@ import com.github.flyinghe.tools.Ognl;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
 import org.apache.commons.httpclient.methods.multipart.Part;
 import org.apache.commons.httpclient.methods.multipart.PartSource;
@@ -27,6 +25,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Created by FlyingHe on 2019/11/2.
@@ -34,6 +33,10 @@ import java.util.*;
 public class HttpUtils {
     public static final String CONTENT_TYPE_JSON = "application/json";
     public static final String CONTENT_TYPE_XML = "application/xml";
+    public static final String METHOD_GET = "GET";
+    public static final String METHOD_POST = "POST";
+    public static final String METHOD_DELETE = "DELETE";
+    public static final String METHOD_PUT = "PUT";
     private static ObjectMapper objectMapper;
     private static TypeFactory typeFactory;
     private HttpClient httpClient;
@@ -244,37 +247,80 @@ public class HttpUtils {
      */
     public String execGet(String url, List<Header> requestHeaders, List<NameValuePair> queryParams)
             throws Exception {
+        return this.execGetOrDelete(url, METHOD_GET, requestHeaders, queryParams, "200");
+    }
+
+    /**
+     * 执行一个Delete请求，并返回字符串数据
+     *
+     * @param url            请求url
+     * @param requestHeaders 请求头列表
+     * @param queryParams    Delete请求参数
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public String execDelete(String url, List<Header> requestHeaders, List<NameValuePair> queryParams)
+            throws Exception {
+        return this.execDelete(url, requestHeaders, queryParams, "200");
+    }
+
+    /**
+     * 执行一个Delete请求，并返回字符串数据
+     *
+     * @param url              请求url
+     * @param requestHeaders   请求头列表
+     * @param queryParams      Delete请求参数
+     * @param successCodeRegex 表示请求成功的正则表达式,若响应码不符合正则表达式则表示此请求失败并抛出异常
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public String execDelete(String url, List<Header> requestHeaders, List<NameValuePair> queryParams, String successCodeRegex)
+            throws Exception {
+        return this.execGetOrDelete(url, METHOD_DELETE, requestHeaders, queryParams, successCodeRegex);
+    }
+
+    /**
+     * 执行一个Get或者Delete请求，并返回字符串数据
+     *
+     * @param url              请求url
+     * @param method           请求方法,{@link HttpUtils#METHOD_GET}或者{@link HttpUtils#METHOD_DELETE}
+     * @param requestHeaders   请求头列表
+     * @param queryParams      请求参数
+     * @param successCodeRegex 表示请求成功的正则表达式,若响应码不符合正则表达式则表示此请求失败并抛出异常
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public String execGetOrDelete(String url, String method, List<Header> requestHeaders, List<NameValuePair> queryParams , String successCodeRegex) throws Exception {
         String result = null;
-        GetMethod getMethod =
-                new GetMethod(url);
+        HttpMethod httpMethod = METHOD_GET.equals(method) ? new GetMethod(url) : new DeleteMethod(url);
         if (null != this.retryHandler) {
-            getMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
+            httpMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
         }
         if (CollectionUtils.isNotEmpty(queryParams)) {
-            getMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
+            httpMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
         if (CollectionUtils.isNotEmpty(requestHeaders)) {
-            requestHeaders.forEach(getMethod::setRequestHeader);
+            requestHeaders.forEach(httpMethod::setRequestHeader);
         }
         Exception _e = null;
         long startTime = System.currentTimeMillis();
         try {
-            this.httpClient.executeMethod(getMethod);
-            if (200 != getMethod.getStatusCode()) {
+            this.httpClient.executeMethod(httpMethod);
+            if (!Pattern.matches(successCodeRegex, String.valueOf(httpMethod.getStatusCode()))) {
                 throw new Exception(
-                        String.format("请求url【%s】未返回200【%d】,ERROR:【%s】【%s】", url, getMethod.getStatusCode(),
-                                getMethod.getStatusLine().toString(), getMethod.getResponseBodyAsString()));
+                        String.format("请求url【%s】返回的响应码不符合表示请求成功的正则表达式【%s】,ERROR:【%s】【%s】", url, successCodeRegex,
+                                httpMethod.getStatusLine().toString(), httpMethod.getResponseBodyAsString()));
             }
-            result = getMethod.getResponseBodyAsString();
+            result = httpMethod.getResponseBodyAsString();
         } catch (Exception e) {
             _e = e;
             throw e;
         } finally {
             long endTime = System.currentTimeMillis();
             if (null != this.logger) {
-                getLog(getMethod, endTime - startTime, this.logger, _e);
+                getOrDeleteLog(httpMethod, endTime - startTime, this.logger, _e);
             }
-            getMethod.releaseConnection();
+            httpMethod.releaseConnection();
         }
         return result;
     }
@@ -422,6 +468,56 @@ public class HttpUtils {
                            List<NameValuePair> queryParams,
                            String paramBody)
             throws Exception {
+        return this.execPostOrPut(url, METHOD_POST, requestHeaders, contentType, queryParams, paramBody, "200");
+    }
+
+    /**
+     * @param url            请求url
+     * @param requestHeaders 请求头列表
+     * @param contentType    contentType
+     * @param queryParams    queryParameter请求参数
+     * @param paramBody      Put请求体
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public String execPut(String url, List<Header> requestHeaders, String contentType,
+                           List<NameValuePair> queryParams,
+                           String paramBody)
+            throws Exception {
+        return this.execPut(url, requestHeaders, contentType, queryParams, paramBody, "200");
+    }
+
+    /**
+     * @param url              请求url
+     * @param requestHeaders   请求头列表
+     * @param contentType      contentType
+     * @param queryParams      queryParameter请求参数
+     * @param paramBody        Put请求体
+     * @param successCodeRegex 表示请求成功的正则表达式,若响应码不符合正则表达式则表示此请求失败并抛出异常
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public String execPut(String url, List<Header> requestHeaders, String contentType,
+                          List<NameValuePair> queryParams,
+                          String paramBody, String successCodeRegex)
+            throws Exception {
+        return this.execPostOrPut(url, METHOD_PUT, requestHeaders, contentType, queryParams, paramBody, successCodeRegex);
+    }
+
+    /**
+     * @param url            请求url
+     * @param method         请求方法,{@link HttpUtils#METHOD_POST}或者{@link HttpUtils#METHOD_PUT}
+     * @param requestHeaders 请求头列表
+     * @param contentType    contentType
+     * @param queryParams    queryParameter请求参数
+     * @param paramBody      请求体
+     * @param successCodeRegex 表示请求成功的正则表达式,若响应码不符合正则表达式则表示此请求失败并抛出异常
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public String execPostOrPut(String url,String method, List<Header> requestHeaders, String contentType,
+                           List<NameValuePair> queryParams, String paramBody, String successCodeRegex)
+            throws Exception {
         if (StringUtils.isBlank(contentType)) {
             contentType = CONTENT_TYPE_JSON;
         }
@@ -430,38 +526,42 @@ public class HttpUtils {
         }
 
         String result = null;
-        PostMethod postMethod = new PostMethod(url);
+        HttpMethod httpMethod = METHOD_POST.equals(method) ? new PostMethod(url) : new PutMethod(url);
         if (null != this.retryHandler) {
-            postMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
+            httpMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
         }
         if (CollectionUtils.isNotEmpty(queryParams)) {
-            postMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
+            httpMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
         if (CollectionUtils.isNotEmpty(requestHeaders)) {
-            requestHeaders.forEach(postMethod::setRequestHeader);
+            requestHeaders.forEach(httpMethod::setRequestHeader);
         }
         StringRequestEntity stringRequestEntity = null;
         Exception _e = null;
         long startTime = System.currentTimeMillis();
         try {
             stringRequestEntity = new StringRequestEntity(paramBody, contentType, "UTF-8");
-            postMethod.setRequestEntity(stringRequestEntity);
-            this.httpClient.executeMethod(postMethod);
-            if (200 != postMethod.getStatusCode()) {
-                throw new Exception(
-                        String.format("请求url【%s】未返回200【%d】,ERROR:【%s】【%s】", url, postMethod.getStatusCode(),
-                                postMethod.getStatusLine().toString(), postMethod.getResponseBodyAsString()));
+            if (httpMethod instanceof PostMethod) {
+                ((PostMethod) httpMethod).setRequestEntity(stringRequestEntity);
+            } else {
+                ((PutMethod) httpMethod).setRequestEntity(stringRequestEntity);
             }
-            result = postMethod.getResponseBodyAsString();
+            this.httpClient.executeMethod(httpMethod);
+            if (!Pattern.matches(successCodeRegex, String.valueOf(httpMethod.getStatusCode()))) {
+                throw new Exception(
+                        String.format("请求url【%s】返回的响应码不符合表示请求成功的正则表达式【%s】,ERROR:【%s】【%s】", url, successCodeRegex,
+                                httpMethod.getStatusLine().toString(), httpMethod.getResponseBodyAsString()));
+            }
+            result = httpMethod.getResponseBodyAsString();
         } catch (Exception e) {
             _e = e;
             throw e;
         } finally {
             long endTime = System.currentTimeMillis();
             if (null != this.logger) {
-                postLog(postMethod, stringRequestEntity, endTime - startTime, this.logger, _e);
+                postOrPutLog(httpMethod, stringRequestEntity, endTime - startTime, this.logger, _e);
             }
-            postMethod.releaseConnection();
+            httpMethod.releaseConnection();
         }
         return result;
     }
@@ -526,16 +626,76 @@ public class HttpUtils {
                                                         List<NameValuePair> formdataParams,
                                                         List<T> fileParams)
             throws Exception {
+        return this.execPostOrPutFile(url, METHOD_POST, requestHeaders, queryParams, formdataParams, fileParams, "200");
+    }
+
+    /**
+     * 执行一个Put请求，并返回字符串数据
+     *
+     * @param url            请求url
+     * @param requestHeaders 请求头
+     * @param queryParams    queryParameter请求参数
+     * @param formdataParams form-data请求参数
+     * @param fileParams     文件请求参数
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public <T extends KeyValuePair> String execPutFile(String url, List<Header> requestHeaders,
+                                                        List<NameValuePair> queryParams,
+                                                        List<NameValuePair> formdataParams,
+                                                        List<T> fileParams)
+            throws Exception {
+        return this.execPutFile(url, requestHeaders, queryParams, formdataParams, fileParams, "200");
+    }
+
+    /**
+     * 执行一个Put请求，并返回字符串数据
+     *
+     * @param url              请求url
+     * @param requestHeaders   请求头
+     * @param queryParams      queryParameter请求参数
+     * @param formdataParams   form-data请求参数
+     * @param fileParams       文件请求参数
+     * @param successCodeRegex 表示请求成功的正则表达式,若响应码不符合正则表达式则表示此请求失败并抛出异常
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public <T extends KeyValuePair> String execPutFile(String url, List<Header> requestHeaders,
+                                                       List<NameValuePair> queryParams,
+                                                       List<NameValuePair> formdataParams,
+                                                       List<T> fileParams, String successCodeRegex)
+            throws Exception {
+        return this.execPostOrPutFile(url, METHOD_PUT, requestHeaders, queryParams, formdataParams, fileParams, successCodeRegex);
+    }
+
+    /**
+     * 执行一个Post或者Put请求，并返回字符串数据
+     *
+     * @param url            请求url
+     * @param method         请求方法,{@link HttpUtils#METHOD_POST}或者{@link HttpUtils#METHOD_PUT}
+     * @param requestHeaders 请求头
+     * @param queryParams    queryParameter请求参数
+     * @param formdataParams form-data请求参数
+     * @param fileParams     文件请求参数
+     * @param successCodeRegex 表示请求成功的正则表达式,若响应码不符合正则表达式则表示此请求失败并抛出异常
+     * @return 返回字符串数据
+     * @throws Exception
+     */
+    public <T extends KeyValuePair> String execPostOrPutFile(String url,String method, List<Header> requestHeaders,
+                                                        List<NameValuePair> queryParams,
+                                                        List<NameValuePair> formdataParams,
+                                                        List<T> fileParams, String successCodeRegex)
+            throws Exception {
         String result = null;
-        PostMethod postMethod = new PostMethod(url);
+        HttpMethod httpMethod = METHOD_POST.equals(method) ? new PostMethod(url) : new PutMethod(url);
         if (null != this.retryHandler) {
-            postMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
+            httpMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, this.retryHandler);
         }
         if (CollectionUtils.isNotEmpty(queryParams)) {
-            postMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
+            httpMethod.setQueryString(queryParams.toArray(new NameValuePair[]{}));
         }
         if (CollectionUtils.isNotEmpty(requestHeaders)) {
-            requestHeaders.forEach(postMethod::setRequestHeader);
+            requestHeaders.forEach(httpMethod::setRequestHeader);
         }
         MultipartRequestEntity multipartRequestEntity = null;
         Exception _e = null;
@@ -559,27 +719,30 @@ public class HttpUtils {
                 }
             }
             if (CollectionUtils.isNotEmpty(parts)) {
-                multipartRequestEntity =
-                        new MultipartRequestEntity(parts.toArray(new Part[]{}), new HttpMethodParams());
-                postMethod.setRequestEntity(multipartRequestEntity);
+                multipartRequestEntity = new MultipartRequestEntity(parts.toArray(new Part[]{}), new HttpMethodParams());
+                if (httpMethod instanceof PostMethod) {
+                    ((PostMethod) httpMethod).setRequestEntity(multipartRequestEntity);
+                } else {
+                    ((PutMethod) httpMethod).setRequestEntity(multipartRequestEntity);
+                }
             }
-            this.httpClient.executeMethod(postMethod);
-            if (200 != postMethod.getStatusCode()) {
+            this.httpClient.executeMethod(httpMethod);
+            if (!Pattern.matches(successCodeRegex, String.valueOf(httpMethod.getStatusCode()))) {
                 throw new Exception(
-                        String.format("请求url【%s】未返回200【%d】,ERROR:【%s】【%s】", url, postMethod.getStatusCode(),
-                                postMethod.getStatusLine().toString(), postMethod.getResponseBodyAsString()));
+                        String.format("请求url【%s】返回的响应码不符合表示请求成功的正则表达式【%s】,ERROR:【%s】【%s】", url, successCodeRegex,
+                                httpMethod.getStatusLine().toString(), httpMethod.getResponseBodyAsString()));
             }
-            result = postMethod.getResponseBodyAsString();
+            result = httpMethod.getResponseBodyAsString();
         } catch (Exception e) {
             _e = e;
             throw e;
         } finally {
             long endTime = System.currentTimeMillis();
             if (null != this.logger) {
-                postLog(postMethod, multipartRequestEntity, formdataParams, fileParams, endTime - startTime,
+                postOrPutLog(httpMethod, multipartRequestEntity, formdataParams, fileParams, endTime - startTime,
                         this.logger, _e);
             }
-            postMethod.releaseConnection();
+            httpMethod.releaseConnection();
         }
         return result;
     }
@@ -611,16 +774,19 @@ public class HttpUtils {
         }
     }
 
-    public static void getLog(GetMethod getMethod, Long exeTime, Logger logger, Exception _e) {
-        String uri = getMethod.getPath();
-        String method = "GET";
-        String queryParam = Optional.ofNullable(getMethod.getQueryString()).orElse("");
+    public static void getOrDeleteLog(HttpMethod httpMethod, Long exeTime, Logger logger, Exception _e) {
+        if (!(httpMethod instanceof GetMethod) && !(httpMethod instanceof DeleteMethod)) {
+            return;
+        }
+        String uri = httpMethod.getPath();
+        String method = httpMethod instanceof GetMethod ? METHOD_GET : METHOD_DELETE;
+        String queryParam = Optional.ofNullable(httpMethod.getQueryString()).orElse("");
         String respStatus =
-                Optional.ofNullable(getMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
+                Optional.ofNullable(httpMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
                         .orElse("");
         String returnStr = "";
         try {
-            returnStr = Optional.ofNullable(getMethod.getResponseBodyAsString()).orElse("");
+            returnStr = Optional.ofNullable(httpMethod.getResponseBodyAsString()).orElse("");
         } catch (Exception e) {
             //do nothing
         }
@@ -631,9 +797,9 @@ public class HttpUtils {
                 .append(String.format("Method:%s\r\n", method))
                 .append(String.format("QueryParam:%s\r\n", queryParam))
                 .append("RequestHeader:[\r\n");
-        printHeader(msgSb, getMethod.getRequestHeaders());
+        printHeader(msgSb, httpMethod.getRequestHeaders());
         msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
-        printHeader(msgSb, getMethod.getResponseHeaders());
+        printHeader(msgSb, httpMethod.getResponseHeaders());
         msgSb.append("]\r\n")
                 .append(String.format("ResponseStatus:%s\r\n", respStatus))
                 .append(String.format("Response:%s\r\n", returnStr))
@@ -643,25 +809,35 @@ public class HttpUtils {
         logger.debug(msgSb.toString());
     }
 
-    public static void postLog(PostMethod postMethod, StringRequestEntity entity, Long exeTime, Logger logger,
+    public static void postOrPutLog(HttpMethod httpMethod, StringRequestEntity entity, Long exeTime, Logger logger,
                                Exception _e) {
-        String uri = postMethod.getPath();
-        String method = "POST";
+        if (!(httpMethod instanceof PostMethod) && !(httpMethod instanceof PutMethod)) {
+            return;
+        }
+        String uri = httpMethod.getPath();
+        String method = httpMethod instanceof PostMethod ? METHOD_POST : METHOD_PUT;
         String contentType = "";
-        String requestCharSet = Optional.ofNullable(postMethod.getRequestCharSet()).orElse("");
-        String responseCharSet = Optional.ofNullable(postMethod.getResponseCharSet()).orElse("");
+        String requestCharSet;
+        String responseCharSet;
+        if (httpMethod instanceof PostMethod) {
+            requestCharSet = Optional.ofNullable(((PostMethod) httpMethod).getRequestCharSet()).orElse("");
+            responseCharSet = Optional.ofNullable(((PostMethod) httpMethod).getResponseCharSet()).orElse("");
+        } else {
+            requestCharSet = Optional.ofNullable(((PutMethod) httpMethod).getRequestCharSet()).orElse("");
+            responseCharSet = Optional.ofNullable(((PutMethod) httpMethod).getResponseCharSet()).orElse("");
+        }
         String payloadStr = "";
         if (null != entity) {
             contentType = entity.getContentType();
             payloadStr = entity.getContent();
         }
-        String queryParam = Optional.ofNullable(postMethod.getQueryString()).orElse("");
+        String queryParam = Optional.ofNullable(httpMethod.getQueryString()).orElse("");
         String respStatus =
-                Optional.ofNullable(postMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
+                Optional.ofNullable(httpMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
                         .orElse("");
         String returnStr = "";
         try {
-            returnStr = Optional.ofNullable(postMethod.getResponseBodyAsString()).orElse("");
+            returnStr = Optional.ofNullable(httpMethod.getResponseBodyAsString()).orElse("");
         } catch (Exception e) {
             //do nothing
         }
@@ -674,9 +850,9 @@ public class HttpUtils {
                 .append(String.format("RequestCharSet:%s\r\n", requestCharSet))
                 .append(String.format("QueryParam:%s\r\n", queryParam))
                 .append("RequestHeader:[\r\n");
-        printHeader(msgSb, postMethod.getRequestHeaders());
+        printHeader(msgSb, httpMethod.getRequestHeaders());
         msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
-        printHeader(msgSb, postMethod.getResponseHeaders());
+        printHeader(msgSb, httpMethod.getResponseHeaders());
         msgSb.append("]\r\n")
                 .append(String.format("Payload:%s\r\n", payloadStr))
                 .append(String.format("ResponseStatus:%s\r\n", respStatus))
@@ -688,25 +864,30 @@ public class HttpUtils {
         logger.debug(msgSb.toString());
     }
 
-    public static <T extends KeyValuePair> void postLog(PostMethod postMethod, MultipartRequestEntity entity,
+    public static <T extends KeyValuePair> void postOrPutLog(HttpMethod httpMethod, MultipartRequestEntity entity,
                                                         List<NameValuePair> formdataParams,
                                                         List<T> fileParams, Long exeTime, Logger logger, Exception _e) {
-        String uri = postMethod.getPath();
-        String method = "POST";
+        String uri = httpMethod.getPath();
+        String method = httpMethod instanceof PostMethod ? METHOD_POST : METHOD_PUT;
         String contentType = "";
         String contentLength = "";
-        String responseCharSet = Optional.ofNullable(postMethod.getResponseCharSet()).orElse("");
+        String responseCharSet;
+        if (httpMethod instanceof PostMethod) {
+            responseCharSet = Optional.ofNullable(((PostMethod) httpMethod).getResponseCharSet()).orElse("");
+        } else {
+            responseCharSet = Optional.ofNullable(((PutMethod) httpMethod).getResponseCharSet()).orElse("");
+        }
         if (null != entity) {
             contentType = entity.getContentType();
             contentLength = Optional.ofNullable(entity.getContentLength()).map(Objects::toString).orElse("");
         }
-        String queryParam = Optional.ofNullable(postMethod.getQueryString()).orElse("");
+        String queryParam = Optional.ofNullable(httpMethod.getQueryString()).orElse("");
         String respStatus =
-                Optional.ofNullable(postMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
+                Optional.ofNullable(httpMethod.getStatusLine()).map(StatusLine::getStatusCode).map(Objects::toString)
                         .orElse("");
         String returnStr = "";
         try {
-            returnStr = Optional.ofNullable(postMethod.getResponseBodyAsString()).orElse("");
+            returnStr = Optional.ofNullable(httpMethod.getResponseBodyAsString()).orElse("");
         } catch (Exception e) {
             //do nothing
         }
@@ -719,9 +900,9 @@ public class HttpUtils {
                 .append(String.format("ContentLength:%s\r\n", contentLength))
                 .append(String.format("QueryParam:%s\r\n", queryParam))
                 .append("RequestHeader:[\r\n");
-        printHeader(msgSb, postMethod.getRequestHeaders());
+        printHeader(msgSb, httpMethod.getRequestHeaders());
         msgSb.append("]\r\n").append("ResponseHeader:[\r\n");
-        printHeader(msgSb, postMethod.getResponseHeaders());
+        printHeader(msgSb, httpMethod.getResponseHeaders());
         msgSb.append("]\r\n").append("FormdataParams:[\r\n");
         if (CollectionUtils.isNotEmpty(formdataParams)) {
             for (NameValuePair pair : formdataParams) {
