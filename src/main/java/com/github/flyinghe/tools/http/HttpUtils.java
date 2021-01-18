@@ -452,7 +452,7 @@ public class HttpUtils {
     public String execPost(String url, List<NameValuePair> queryParams, Object paramBody)
             throws Exception {
         return execPost(url, null, CONTENT_TYPE_JSON, queryParams,
-                paramBody != null ? objectMapper.writeValueAsString(paramBody) : "");
+                paramBody == null ? "" : paramBody instanceof String ? paramBody.toString() : objectMapper.writeValueAsString(paramBody));
     }
 
     /**
