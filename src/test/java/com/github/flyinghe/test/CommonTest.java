@@ -150,10 +150,10 @@ public class CommonTest {
         Person person = CommonUtils.mapToBean(new HashMap<String, Object>() {{
             this.put("birthdaies", "2020-02-04 19:09:55");
             this.put("ins", "1,2,3,4");
-        }}, Person.class, new HashMap<String, CommonUtils.MapToBeanCB>() {{
-            this.put("ins", new CommonUtils.MapToBeanCB() {
-                @Override
-                public Object getValue(Object value) {
+        }}, Person.class, new CommonUtils.MapToBeanCB() {
+            @Override
+            public Object[] getValue(String key, Object value) {
+                if ("ins".equals(key)) {
                     if (null != value) {
                         List<Integer> result = new ArrayList<>();
                         for (String i : value.toString().split(",")) {
@@ -165,10 +165,10 @@ public class CommonTest {
                         }
                         value = result;
                     }
-                    return value;
                 }
-            });
-        }});
+                return new Object[]{key, value};
+            }
+        });
         System.out.println(person);
     }
 }
