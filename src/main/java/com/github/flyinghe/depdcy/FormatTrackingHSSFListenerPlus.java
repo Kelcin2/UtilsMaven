@@ -16,32 +16,45 @@
 ==================================================================== */
 package com.github.flyinghe.depdcy;
 
-import org.apache.poi.hssf.eventusermodel.FormatTrackingHSSFListener;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.eventusermodel.HSSFListener;
-import org.apache.poi.hssf.record.*;
+import org.apache.poi.hssf.record.CellValueRecordInterface;
+import org.apache.poi.hssf.record.ExtendedFormatRecord;
+import org.apache.poi.hssf.record.FormatRecord;
+import org.apache.poi.hssf.record.FormulaRecord;
+import org.apache.poi.hssf.record.NumberRecord;
+import org.apache.poi.hssf.record.Record;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.hssf.usermodel.HSSFDataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.util.NumberToTextConverter;
 import org.apache.poi.util.LocaleUtil;
-import org.apache.poi.util.POILogFactory;
-import org.apache.poi.util.POILogger;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import static org.apache.logging.log4j.util.Unbox.box;
 
 /**
- * Created by FlyingHe on 2017/8/12.
+ * A proxy HSSFListener that keeps track of the document formatting records, and
+ * provides an easy way to look up the format strings used by cells from their
+ * ids.
  */
 public class FormatTrackingHSSFListenerPlus implements HSSFListener {
-    private final static POILogger logger = POILogFactory.getLogger(FormatTrackingHSSFListener.class);
+    private static final Logger LOG = LogManager.getLogger(FormatTrackingHSSFListenerPlus.class);
     private final HSSFListener _childListener;
     private final HSSFDataFormatter _formatter;
     private final NumberFormat _defaultFormat;
-    private final Map<Integer, FormatRecord> _customFormatRecords = new HashMap<Integer, FormatRecord>();
-    private final List<ExtendedFormatRecord> _xfRecords = new ArrayList<ExtendedFormatRecord>();
+    private final Map<Integer, FormatRecord> _customFormatRecords = new HashMap<>();
+    private final List<ExtendedFormatRecord> _xfRecords = new ArrayList<>();
 
     /**
      * Creates a format tracking wrapper around the given listener, using
@@ -58,7 +71,7 @@ public class FormatTrackingHSSFListenerPlus implements HSSFListener {
      * the given locale for the formats.
      *
      * @param childListener the listener to be wrapped
-     * @param locale        the locale for the formats
+     * @param locale the locale for the formats
      */
     public FormatTrackingHSSFListenerPlus(
             HSSFListener childListener, Locale locale) {
@@ -108,11 +121,12 @@ public class FormatTrackingHSSFListenerPlus implements HSSFListener {
      * Formats the given numeric of date cells contents as a String, in as
      * close as we can to the way that Excel would do so. Uses the various
      * format records to manage this.
-     * <p>
+     *
      * TODO - move this to a central class in such a way that hssf.usermodel can
      * make use of it too
      *
      * @param cell the cell
+     *
      * @return the given numeric of date cells contents as a String
      */
     public String formatNumberDateCell(CellValueRecordInterface cell) {
@@ -168,6 +182,7 @@ public class FormatTrackingHSSFListenerPlus implements HSSFListener {
      * Returns the format string, eg $##.##, for the given number format index.
      *
      * @param formatIndex the format index
+     *
      * @return the format string
      */
     public String getFormatString(int formatIndex) {
@@ -175,8 +190,7 @@ public class FormatTrackingHSSFListenerPlus implements HSSFListener {
         if (formatIndex >= HSSFDataFormat.getNumberOfBuiltinBuiltinFormats()) {
             FormatRecord tfr = _customFormatRecords.get(Integer.valueOf(formatIndex));
             if (tfr == null) {
-                logger.log(POILogger.ERROR, "Requested format at index " + formatIndex
-                    + ", but it wasn't found");
+                LOG.atError().log("Requested format at index {}, but it wasn't found", box(formatIndex));
             } else {
                 format = tfr.getFormatString();
             }
@@ -190,6 +204,7 @@ public class FormatTrackingHSSFListenerPlus implements HSSFListener {
      * Returns the format string, eg $##.##, used by your cell
      *
      * @param cell the cell
+     *
      * @return the format string
      */
     public String getFormatString(CellValueRecordInterface cell) {
@@ -205,13 +220,13 @@ public class FormatTrackingHSSFListenerPlus implements HSSFListener {
      * Returns the index of the format string, used by your cell, or -1 if none found
      *
      * @param cell the cell
+     *
      * @return the index of the format string
      */
     public int getFormatIndex(CellValueRecordInterface cell) {
         ExtendedFormatRecord xfr = _xfRecords.get(cell.getXFIndex());
         if (xfr == null) {
-            logger.log(POILogger.ERROR, "Cell " + cell.getRow() + "," + cell.getColumn()
-                + " uses XF with index " + cell.getXFIndex() + ", but we don't have that");
+            LOG.atError().log("Cell {},{} uses XF with index {}, but we don't have that", box(cell.getRow()),box(cell.getColumn()),box(cell.getXFIndex()));
             return -1;
         }
         return xfr.getFormatIndex();

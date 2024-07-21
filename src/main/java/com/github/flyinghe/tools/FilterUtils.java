@@ -1,18 +1,18 @@
 package com.github.flyinghe.tools;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * 此类提供一些针对javax.servlet.Filter的工具，例如针对Http请求的编码过滤工具等等
  *
  * @author Flying
- * @see javax.servlet.Filter
+ * @see jakarta.servlet.Filter
  */
 public class FilterUtils {
     /**

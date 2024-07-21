@@ -744,7 +744,7 @@ public abstract class AbstractExcelWriter<T> {
         if (XLSX != this.excelType) {
             throw new WriteExcelException("此颜色仅适用于XLSX类型Excel文件使用");
         }
-        return new XSSFColor(new java.awt.Color(r, g, b, a));
+        return new XSSFColor(new java.awt.Color(r, g, b, a), null);
     }
 
     public AbstractExcelWriter() throws WriteExcelException {

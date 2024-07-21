@@ -1,5 +1,7 @@
 package com.github.flyinghe.tools;
 
+import org.apache.commons.beanutils.BeanUtils;
+
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Blob;
 import java.sql.Connection;
@@ -12,8 +14,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.beanutils.BeanUtils;
 
 /**
  * DAO (DATA ACCESS OBJECT)。

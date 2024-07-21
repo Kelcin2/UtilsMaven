@@ -1,6 +1,7 @@
 package com.github.flyinghe.test;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Created by FlyingHe on 2021/1/10.

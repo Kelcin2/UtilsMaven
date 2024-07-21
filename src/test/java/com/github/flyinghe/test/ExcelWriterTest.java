@@ -7,7 +7,7 @@ import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.ExcelWriter;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.text.SimpleDateFormat;

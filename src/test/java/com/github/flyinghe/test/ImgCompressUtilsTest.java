@@ -3,7 +3,7 @@ package com.github.flyinghe.test;
 import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.ImgCompressUtils;
 import com.github.flyinghe.tools.VerificationCodeImage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

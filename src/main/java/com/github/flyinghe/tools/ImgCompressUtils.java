@@ -1,13 +1,20 @@
 package com.github.flyinghe.tools;
 
-import com.sun.image.codec.jpeg.JPEGCodec;
-import com.sun.image.codec.jpeg.JPEGEncodeParam;
-import com.sun.image.codec.jpeg.JPEGImageEncoder;
-
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
 
 /**
  * Created by FlyingHe on 2016/12/5.
@@ -144,31 +151,34 @@ public class ImgCompressUtils {
      * @throws Exception
      */
     private static void encodeImg(String desFile, BufferedImage desImg, Float quality) {
-        FileOutputStream out = null;
-        try {
-            if (quality != null) {
-                if (quality > 1.0 || quality < 0.0) {
-                    throw new Exception("quality参数指定值不正确");
-                }
+        if (quality != null && (quality > 1.0 || quality < 0.0)) {
+            throw new IllegalArgumentException("quality参数指定值不正确");
+        }
+        ImageWriter writer = null;
+        try (FileOutputStream fos = new FileOutputStream(desFile);
+             ImageOutputStream ios = ImageIO.createImageOutputStream(fos)) {
+            // 获取JPEG图像写入器
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
+            if (!writers.hasNext()) {
+                throw new IllegalStateException("No JPEG Image Writers Exist");
             }
-            out = new FileOutputStream(desFile);
-            //图片采用JPEG格式编码
-            JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
+            writer = writers.next();
+            // 配置压缩质量
+            ImageWriteParam param = writer.getDefaultWriteParam();
             if (quality != null) {
-                //编码参数
-                JPEGEncodeParam jep = JPEGCodec.getDefaultJPEGEncodeParam(desImg);
-                //设置压缩质量
-                jep.setQuality(quality, true);
-                //开始编码并输出
-                encoder.encode(desImg, jep);
-            } else {
-                //开始编码并输出
-                encoder.encode(desImg);
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionQuality(quality);
             }
+            // 写入图像
+            writer.setOutput(ios);
+            writer.write(null, new IIOImage(desImg, null, null), param);
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            CommonUtils.closeIOStream(null, out);
+            if (null != writer) {
+                writer.dispose();
+            }
         }
     }
 
@@ -180,29 +190,29 @@ public class ImgCompressUtils {
      * @return 返回编码后的BufferedImage对象
      */
     private static BufferedImage encodeImg(BufferedImage desImg, Float quality) {
-        ByteArrayOutputStream baos = null;
+        if (quality != null && (quality > 1.0 || quality < 0.0)) {
+            throw new IllegalArgumentException("quality参数指定值不正确");
+        }
         ByteArrayInputStream bais = null;
         BufferedImage bufferedImage = null;
-        try {
-            if (quality != null) {
-                if (quality > 1.0 || quality < 0.0) {
-                    throw new Exception("quality参数指定值不正确");
-                }
+        ImageWriter writer = null;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+            // 获取JPEG图像写入器
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
+            if (!writers.hasNext()) {
+                throw new IllegalStateException("No JPEG Image Writers Exist");
             }
-            baos = new ByteArrayOutputStream();
-            //图片采用JPEG格式编码
-            JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(baos);
+            writer = writers.next();
+            // 配置压缩质量
+            ImageWriteParam param = writer.getDefaultWriteParam();
             if (quality != null) {
-                //编码参数
-                JPEGEncodeParam jep = JPEGCodec.getDefaultJPEGEncodeParam(desImg);
-                //设置压缩质量
-                jep.setQuality(quality, true);
-                //开始编码并输出
-                encoder.encode(desImg, jep);
-            } else {
-                //开始编码并输出
-                encoder.encode(desImg);
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionQuality(quality);
             }
+            // 写入图像
+            writer.setOutput(ios);
+            writer.write(null, new IIOImage(desImg, null, null), param);
 
             bais = new ByteArrayInputStream(baos.toByteArray());
             bufferedImage = ImageIO.read(bais);
@@ -210,9 +220,11 @@ public class ImgCompressUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            CommonUtils.closeIOStream(bais, baos);
+            CommonUtils.closeIOStream(bais, null);
+            if (null != writer) {
+                writer.dispose();
+            }
         }
-
         return bufferedImage;
     }
 

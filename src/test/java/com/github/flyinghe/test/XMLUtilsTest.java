@@ -5,7 +5,7 @@ import com.github.flyinghe.tools.XMLUtils;
 import org.apache.commons.io.FileUtils;
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.StringReader;

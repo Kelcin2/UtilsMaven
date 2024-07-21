@@ -2,7 +2,13 @@ package com.github.flyinghe.tools;
 
 import com.github.flyinghe.exception.ReadExcelException;
 import org.apache.commons.lang3.time.DateUtils;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -33,11 +39,11 @@ public class ReadExcelUtils {
      * @param cell 指定单元格
      * @return 返回Cell里的内容
      */
-    public static Object getCellValue(int type, Cell cell) {
+    public static Object getCellValue(CellType type, Cell cell) {
         switch (type) {
-            case Cell.CELL_TYPE_BOOLEAN:
+            case BOOLEAN:
                 return cell.getBooleanCellValue();
-            case Cell.CELL_TYPE_NUMERIC:
+            case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
                     return DateUtil.getJavaDate(cell.getNumericCellValue());
                 } else {
@@ -45,13 +51,13 @@ public class ReadExcelUtils {
                     return bd.toString().contains(".") ? bd.setScale(2, RoundingMode.HALF_UP).toString() :
                             bd.toString();
                 }
-            case Cell.CELL_TYPE_STRING:
+            case STRING:
                 try {
                     return DateUtils.parseDate(cell.getStringCellValue(), ReadExcelUtils.PATTERN);
                 } catch (Exception e) {
                     return cell.getStringCellValue();
                 }
-            case Cell.CELL_TYPE_FORMULA:
+            case FORMULA:
                 if (DateUtil.isCellDateFormatted(cell)) {
                     return cell.getDateCellValue();
                 }

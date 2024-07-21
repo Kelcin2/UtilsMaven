@@ -6,15 +6,17 @@ import com.github.flyinghe.domain.TestObj;
 import com.github.flyinghe.exception.WriteExcelException;
 import com.github.flyinghe.tools.CommonUtils;
 import com.github.flyinghe.tools.XLSXWriter;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -196,7 +198,7 @@ public class XLSXWriterTest {
         xlsxWriter.getColumnWidthMapping().put("dateType", 40);
         xlsxWriter.getColumnWidthMapping().put("calendarType", 40);
         xlsxWriter.getCellStyleMapping().put("booleanType",
-                this.produceCellStyle(xlsxWriter, IndexedColors.SKY_BLUE.getIndex(), IndexedColors.BLACK.getIndex()));
+                this.produceCellStyle(xlsxWriter, xlsxWriter.createXLSXColor(2,3,3,51).getIndex(), IndexedColors.BLACK.getIndex()));
         xlsxWriter.getCellStyleMapping().put("floatType",
                 this.produceCellStyle(xlsxWriter, IndexedColors.BLACK.getIndex(), IndexedColors.WHITE.getIndex()));
         xlsxWriter.getTitleCellStyleMapping().put("nullType",
@@ -737,4 +739,5 @@ public class XLSXWriterTest {
         System.out.println(String.format("共写入数据量(不包括标题):%d", xlsxWriter.getRealDataInExcel()));
         System.out.println(String.format("共耗时:%d ms", System.currentTimeMillis() - s));
     }
+
 }

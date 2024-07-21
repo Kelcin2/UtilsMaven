@@ -12,7 +12,7 @@ import com.github.flyinghe.tools.XLSXReader;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.File;

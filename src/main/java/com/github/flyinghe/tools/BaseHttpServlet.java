@@ -1,12 +1,14 @@
 package com.github.flyinghe.tools;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.Serial;
+import java.lang.reflect.Method;
 
 /**
  * 该类用于其他Servlet继承，这里只重写了HttpServlet的service方法，
@@ -17,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public abstract class BaseHttpServlet extends HttpServlet {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	@Override
